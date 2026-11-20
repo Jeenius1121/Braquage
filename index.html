@@ -199,12 +199,14 @@ const accord = (s, sexe) => s.replace(/\{(\w+)\}/g, (m, k) => ACCORDS[k] ? ACCOR
 const NIVEAU_MAX = 8;
 const PENTE = 1.8; // plus c'est haut, plus la compétence compte (et moins la chance)
 const ARGENT_DEPART = 4000;
-const BASE = t => 400 * Math.pow(2.6, t - 1);           // prix « normal » d'une recrue moyenne pour un coup de niveau t
-const BUTIN_MOYEN = t => BASE(t) * (30 + 6 * t);        // butin moyen d'une cible de niveau t (les gros coups demandent plus de monde, ils rapportent plus)
+const BASE = t => 400 * Math.pow(2.45, t - 1);          // prix « normal » d'une recrue moyenne pour un coup de niveau t (grimpe un peu moins vite que le butin)
+const BUTIN_MOYEN = t => 400 * Math.pow(2.6, t - 1) * (30 + 6 * t); // butin moyen d'une cible de niveau t (les gros coups demandent plus de monde, ils rapportent plus)
 
 /* Le prix demandé suit la valeur réelle… la plupart du temps.
-   ~75 % : prix cohérent (±15 %) ; ~12 % : bonne affaire (moitié prix environ) ; ~13 % : arnaque (presque le double). */
-function loiDuPrix(valeur) {
+   ~75 % : prix cohérent (±15 %) ; ~12 % : bonne affaire (moitié prix environ) ; ~13 % : arnaque (presque le double).
+   L'option « petit budget » (une par étape) n'est jamais une arnaque. */
+function loiDuPrix(valeur, eco) {
+  if (eco) { const f = rand(0.5, 0.8); return { prix: arrondiPrix(valeur * f), facteur: f }; }
   const r = Math.random();
   const f = r < 0.12 ? rand(0.45, 0.75) : r < 0.25 ? rand(1.35, 1.9) : rand(0.85, 1.18);
   return { prix: arrondiPrix(valeur * f), facteur: f };
@@ -325,6 +327,25 @@ function proposerCibles(niveau) {
   if (niveau === 1) tiers[0] = 1;
   return tiers.map(genererCible);
 }
+/* Pour lancer un coup, il faut au moins engager une recrue : le minimum, c'est la recrue la moins chère.
+   Si aucune des cibles proposées n'est abordable, on cherche un coup plus petit (jusqu'au niveau 1).
+   Si même le plus petit braquage est hors de portée, la partie est perdue. */
+const minimumPourLancer = etapes => Math.min(...etapes.filter(e => e.type === "role").flatMap(e => e.offres.map(o => o.prix)));
+function preparerCibles(niveau, argent) {
+  const cibles = proposerCibles(niveau), preps = {};
+  for (const c of cibles) preps[c.id] = construireEtapes(c);
+  const abordable = c => minimumPourLancer(preps[c.id]) <= argent;
+  if (!cibles.some(abordable)) {
+    for (let t = cibles[0].t - 1; t >= 1 && !cibles.some(abordable); t--) {
+      for (let essai = 0; essai < 3; essai++) {
+        const c = genererCible(t), e = construireEtapes(c);
+        if (minimumPourLancer(e) <= argent) { delete preps[cibles[0].id]; cibles[0] = c; preps[c.id] = e; break; }
+      }
+    }
+  }
+  const minimum = Math.min(...cibles.map(c => minimumPourLancer(preps[c.id])));
+  return { cibles, preps, perdu: minimum > argent, minimum };
+}
 
 /* ===== RECRUES =====
    Chaque recrue a un vrai niveau caché (s, de 0 à 1). Tout le reste en découle : son passé, sa réputation, ses surnoms…
@@ -432,10 +453,11 @@ const DEBUTANTS = [
   ["Débutant{e}, mais sérieu{x}, paraît-il.", "Jamais testé{e} sur un vrai coup.", "Motivé{e}. C'est déjà ça.", "Pas d'expérience, mais pas maladroit{e} non plus.", "Débutant{e} prudent{e}."],
   ["Jamais fait de braquage, mais on dit qu'{il} a un vrai talent.", "Un{e} jeune qui promet, d'après ceux qui l'ont vu{e} faire.", "Pas d'expérience du milieu, mais un sacré CV.", "Débutant{e} dans le milieu, expert{e} dans son métier.", "Les anciens disent qu'{il} ira loin."],
 ];
-function genererRecrue(role, t) {
+function genererRecrue(role, t, eco = false) {
   const sexe = sexeAuHasard();
   // vrai niveau : moyenne de 3 tirages, étirée (beaucoup de moyens, quelques très bons et très mauvais)
-  const s = clamp(0.5 + ((Math.random() + Math.random() + Math.random()) / 3 - 0.5) * 1.8, 0.03, 0.98);
+  // l'option « petit budget » : moyenne, mais pas chère
+  const s = eco ? rand(0.32, 0.55) : clamp(0.5 + ((Math.random() + Math.random() + Math.random()) / 3 - 0.5) * 1.8, 0.03, 0.98);
   const age = randInt(19, 63);
   const traits = [];
   const tirer = (id, p) => { if (chance(p) && !traits.includes(id)) traits.push(id); };
@@ -468,7 +490,7 @@ function genererRecrue(role, t) {
   const bande = s < 0.35 ? 0 : s < 0.68 ? 1 : 2;
   const repBande = clamp((s < 0.25 ? 0 : s < 0.5 ? 1 : s < 0.78 ? 2 : 3) + (chance(0.15) ? choix([-1, 1]) : 0), 0, 3); // la réputation se trompe parfois
   const valeur = BASE(t) * ROLES[role].prix * (0.25 + 1.75 * Math.pow(s, 1.6));
-  const { prix, facteur } = loiDuPrix(valeur);
+  const { prix, facteur } = loiDuPrix(valeur, eco);
   const p = prenom(sexe), n = nomFamille();
   return {
     id: Math.random().toString(36).slice(2, 10), role, sexe, prenom: p, nom: n, surnom, age, s, traits, connus, prix, facteur,
@@ -615,10 +637,18 @@ const avisVendeur = (rel, sexe) => {
   const flou = () => chance(0.15) ? clamp(bande + choix([-1, 1]), 0, 3) : bande; // l'impression peut tromper
   return accord(choix(VENDEURS_A[flou()]) + " " + choix(VENDEURS_B[flou()]), sexe);
 };
-const parmi = (liste, t) => { const dispo = liste.filter(x => x.tmin <= t); return melange(dispo).slice(0, 3); };
+// trois offres : un modèle d'entrée de gamme vendu à prix doux, et deux modèles au hasard
+function offresBoutique(boutique, liste, t) {
+  const dispo = liste.filter(x => x.tmin <= t);
+  const valeurModele = m => m.q !== undefined ? m.q : (m.vitesse + m.discretion + m.coffre) / 3;
+  const basGamme = dispo.slice().sort((a, b) => valeurModele(a) - valeurModele(b)).slice(0, 2);
+  const eco = choix(basGamme);
+  const autres = melange(dispo.filter(m => m !== eco)).slice(0, 2);
+  return melange([genererObjet(boutique, eco, t, true), ...autres.map(m => genererObjet(boutique, m, t))]);
+}
 
-function genererObjet(boutique, modele, t) {
-  const rel = rand(0.5, 0.99), sexe = sexeAuHasard();
+function genererObjet(boutique, modele, t, eco = false) {
+  const rel = eco ? rand(0.72, 0.95) : rand(0.5, 0.99), sexe = sexeAuHasard();
   const base = BASE(t) * BOUTIQUES[boutique].prix;
   const o = { id: Math.random().toString(36).slice(2, 10), boutique, nom: modele.nom, rel, desc: DESC_OBJETS[modele.nom] || "",
     vendeur: `${prenom(sexe)} ${nomFamille()}, ${accord(choix(METIERS[boutique]), sexe)}${chance(0.6) ? " à " + choix(VILLES) : ""}`, avis: avisVendeur(rel, sexe), detail: choix(DETAILS_OBJETS[boutique]) };
@@ -632,7 +662,7 @@ function genererObjet(boutique, modele, t) {
     if (boutique === "armes") o.violence = modele.violence;
   }
   const valeur = base * (0.35 + 1.4 * o.q) * (0.6 + 0.5 * rel);
-  Object.assign(o, loiDuPrix(valeur));
+  Object.assign(o, loiDuPrix(valeur, eco));
   return o;
 }
 function genererInfos(cible) {
@@ -650,7 +680,8 @@ function genererInfos(cible) {
    Les étapes dépendent de la cible : pas de perceur pour une buvette sans coffre, un chef d'équipe à partir du niveau 3… */
 function construireEtapes(cible) {
   const n = cible.niv, t = cible.t, etapes = [];
-  const role = r => etapes.push({ type: "role", cle: r, offres: [0, 1, 2].map(() => genererRecrue(r, t)), choix: null });
+  // à chaque poste : deux candidats au hasard + un candidat « petit budget », dans le désordre
+  const role = r => etapes.push({ type: "role", cle: r, offres: melange([genererRecrue(r, t), genererRecrue(r, t), genererRecrue(r, t, true)]), choix: null });
   const boutique = (b, offres) => etapes.push({ type: "boutique", cle: b, offres, choix: null, multi: [] });
   if (t >= 3) role("chef");
   role("chauffeur");
@@ -659,10 +690,10 @@ function construireEtapes(cible) {
   if (n.coffre > 0) role("perceur");
   if (t >= 2) role("logisticien");
   if (t >= 2) role("guetteur");
-  boutique("vehicule", parmi(VEHICULES, t).map(m => genererObjet("vehicule", m, t)));
-  boutique("armes", parmi(ARMES, t).map(m => genererObjet("armes", m, t)));
-  if (n.coffre > 0) boutique("ouverture", parmi(OUVERTURE, t).map(m => genererObjet("ouverture", m, t)));
-  if (n.alarme > 0 || n.cameras > 0) boutique("piratage", parmi(PIRATAGE, t).map(m => genererObjet("piratage", m, t)));
+  boutique("vehicule", offresBoutique("vehicule", VEHICULES, t));
+  boutique("armes", offresBoutique("armes", ARMES, t));
+  if (n.coffre > 0) boutique("ouverture", offresBoutique("ouverture", OUVERTURE, t));
+  if (n.alarme > 0 || n.cameras > 0) boutique("piratage", offresBoutique("piratage", PIRATAGE, t));
   boutique("infos", genererInfos(cible));
   return etapes;
 }
@@ -1021,7 +1052,8 @@ let S = null; // l'état de la partie
 function sauver() { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) {} }
 function charger() { try { const x = JSON.parse(localStorage.getItem(CLE)); return x && x.argent !== undefined ? x : null; } catch (e) { return null; } }
 function nouvellePartie() {
-  S = { argent: ARGENT_DEPART, niveau: 1, coup: 1, ecran: "cibles", cibles: proposerCibles(1), preps: {}, cibleId: null, etape: 0, resultat: null,
+  const p = preparerCibles(1, ARGENT_DEPART);
+  S = { argent: ARGENT_DEPART, niveau: 1, coup: 1, ecran: "cibles", cibles: p.cibles, preps: p.preps, cibleId: null, etape: 0, resultat: null,
     stats: { coups: 0, reussis: 0, meilleur: 0, totalGagne: 0, niveauMax: 1 }, legende: false };
   sauver();
 }
@@ -1075,6 +1107,14 @@ function ecranAccueil() {
 
 // --- choix de la cible
 function ecranCibles() {
+  for (const c of S.cibles) if (!S.preps[c.id]) S.preps[c.id] = construireEtapes(c); // anciennes sauvegardes
+  const minimum = c => minimumPourLancer(S.preps[c.id]);
+  if (S.cibles.every(c => minimum(c) > S.argent)) {
+    app.innerHTML = `<section class="carte issue rouge" style="margin-top:20px"><h2 class="titre">Plus un sou</h2>
+      <p class="muet">Avec ${euros(S.argent)}, tu ne peux même pas engager une seule recrue pour le plus petit coup.</p></section>
+      <button class="btn danger" data-a="finPartie">Fin de la partie</button>`;
+    return;
+  }
   const libelle = t => t < S.niveau ? "Coup sûr" : t > S.niveau ? "Gros coup" : "À ta mesure";
   app.innerHTML = `
   <h2 class="titre" style="font-size:1.7rem; margin-top:10px">Choisis ta cible</h2>
@@ -1095,7 +1135,8 @@ function ecranCibles() {
       <span>🚓</span><span>${c.gendarmerie ? "Gendarmerie" : "Police"} à environ ${c.minutesPolice} min</span>
     </div>
     <div class="ambiance">« ${c.ambiance} »</div>
-    <button class="btn" data-a="cible" data-i="${i}">Préparer ce coup</button>
+    ${minimum(c) > S.argent ? `<div class="alerte-recap">Hors de portée : la recrue la moins chère coûte ${euros(minimum(c))}.</div>` : ""}
+    <button class="btn" data-a="cible" data-i="${i}" ${minimum(c) > S.argent ? "disabled" : ""}>Préparer ce coup</button>
   </article>`).join("")}`;
 }
 
@@ -1270,7 +1311,8 @@ function ecranBilan() {
   const objets = R.objets.map(o => `<div class="ligne-recap"><span>${BOUTIQUES[o.boutique].icone} ${o.nom}</span><span>${o.panne ? `<span class="badge rouge">En panne</span>` : `<span class="badge vert">A tenu</span>`} <span class="badge ${verdictPrix(o.facteur).c}">${verdictPrix(o.facteur).txt}</span></span></div>`).join("")
     + R.infos.map(i => `<div class="ligne-recap"><span>🗂️ ${i.nom}</span><span>${i.vraie ? `<span class="badge vert">Vraie</span>` : `<span class="badge rouge">Fausse</span>`} <span class="badge ${verdictPrix(i.facteur).c}">${verdictPrix(i.facteur).txt}</span></span></div>`).join("");
   const solde = R.gain - R.cout - R.saisie;
-  const fin = R.argentApres < seuilMinimum(S.niveau);
+  if (!S.prochain) { S.prochain = preparerCibles(S.niveau, S.argent); sauver(); }
+  const fin = S.prochain.perdu;
   app.innerHTML = `
     <section class="carte issue ${R.issue.c}">
       <h2 class="titre">${R.issue.titre}</h2>
@@ -1289,15 +1331,14 @@ function ecranBilan() {
     <div class="carte">${membres}</div>
     ${objets ? `<h3 class="titre" style="font-size:1.25rem; color:var(--or); margin-top:18px">Le matériel</h3><div class="carte">${objets}</div>` : ""}
     ${R.reussi && c.t >= S.niveauAvant ? `<p style="text-align:center; color:var(--or)">⭐ Ta réputation grandit : de plus grosses cibles s'ouvrent à toi.</p>` : ""}
-    ${fin ? `<div class="alerte-recap">Tu n'as plus assez d'argent pour monter une équipe.</div><button class="btn danger" data-a="finPartie">Fin de la partie</button>` : `<button class="btn" data-a="coupSuivant">Préparer le coup suivant</button>`}`;
+    ${fin ? `<div class="alerte-recap">Tu n'as plus assez d'argent pour lancer le moindre braquage : même la recrue la moins chère du plus petit coup coûte ${euros(S.prochain.minimum)}.</div><button class="btn danger" data-a="finPartie">Fin de la partie</button>` : `<button class="btn" data-a="coupSuivant">Préparer le coup suivant</button>`}`;
 }
-const seuilMinimum = niveau => Math.round(BASE(Math.max(1, niveau - 1)) * 0.4);
 
 // --- fin de partie
 function ecranFin() {
   const st = S.stats;
   app.innerHTML = `
-    <section class="carte issue rouge" style="margin-top:20px"><h2 class="titre">Rideau</h2><p class="muet">Plus un sou pour monter une équipe. Ta carrière s'arrête ici.</p></section>
+    <section class="carte issue rouge" style="margin-top:20px"><h2 class="titre">Rideau</h2><p class="muet">Plus assez d'argent pour lancer le moindre braquage. Ta carrière s'arrête ici.</p></section>
     <div class="carte">
       <div class="ligne-recap"><span>Coups tentés</span><b>${st.coups}</b></div>
       <div class="ligne-recap"><span>Coups réussis</span><b>${st.reussis}</b></div>
@@ -1344,7 +1385,9 @@ function action(a, i) {
       aller("bilan"); break;
     }
     case "coupSuivant": {
-      S.coup++; S.cibles = proposerCibles(S.niveau); S.preps = {}; S.cibleId = null; S.etape = 0; S.resultat = null; S.bilanApplique = false;
+      const p = S.prochain || preparerCibles(S.niveau, S.argent);
+      if (p.perdu) { aller("fin"); break; }
+      S.coup++; S.cibles = p.cibles; S.preps = p.preps; S.prochain = null; S.cibleId = null; S.etape = 0; S.resultat = null; S.bilanApplique = false;
       aller("cibles"); break;
     }
     case "finPartie": aller("fin"); break;
@@ -1369,6 +1412,7 @@ function appliquerBilan() {
   }
   S.stats.meilleur = Math.max(S.stats.meilleur, R.gain);
   S.stats.niveauMax = Math.max(S.stats.niveauMax, S.niveau);
+  S.prochain = preparerCibles(S.niveau, S.argent);
   S.bilanApplique = true; S.logVu = true;
   sauver();
 }
@@ -1422,7 +1466,7 @@ function dessinerAvatar(cv, graine, sexe, age) {
 /* ===== VERSION =====
    À chaque changement : on monte VERSION ici et dans version.json (même numéro).
    La page compare régulièrement avec version.json en ligne et propose de se mettre à jour. */
-const VERSION = "1.1.0", NOTES = "Textes beaucoup plus variés, jauge d'efficacité pour chaque recrue, possibilité de laisser un poste vide avec ses conséquences, et chances estimées du plan.";
+const VERSION = "1.2.0", NOTES = "À chaque étape, une option petit budget correcte ; prix des gros coups plus raisonnables ; partie perdue quand on ne peut plus lancer le moindre braquage.";
 $("version").innerHTML = `<b>v${VERSION}</b> · ${NOTES}`;
 const plusRecente = (a, b) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
 async function verifierVersion() {
