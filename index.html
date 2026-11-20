@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Braquage</title>
+<!-- installable comme une appli (iPhone : « Sur l'écran d'accueil » ; Android : « Ajouter à l'écran d'accueil ») -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="theme-color" content="#111014">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Braquage">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Special+Elite&family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#111014; --panel:#1c1b21; --panel2:#26242d; --ink:#f1ede4; --muted:#a29d92; --line:#36333d;
+  --or:#e8b04a; --or-fonce:#3a2f1a; --rouge:#e5484d; --rouge-fond:#3a1a1c; --vert:#3ecf8e; --vert-fond:#16302a; --bleu:#6aa8ff;
+  --papier:#ece3cf; --papier-ink:#2a241a;
+  color-scheme:dark; box-sizing:border-box;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%; overflow-x:hidden}
+body{margin:0; min-height:100vh; min-height:100svh; color:var(--ink); font-family:"Rubik",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.45;
+  background:var(--bg) radial-gradient(120% 70% at 50% -10%, #3a2a14 0%, #1a1712 45%, var(--bg) 80%) no-repeat; -webkit-tap-highlight-color:transparent}
+body::before{content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 2px, transparent 2px 5px)}
+main{max-width:560px; margin:0 auto; padding:12px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+button{font:inherit; color:inherit; -webkit-user-select:none; user-select:none; cursor:pointer}
+button:disabled{cursor:not-allowed}
+h1,h2,h3{margin:0}
+.titre{font-family:"Anton",Impact,"Arial Black",sans-serif; font-weight:400; letter-spacing:.02em; text-transform:uppercase}
+.dossier{font-family:"Special Elite","Courier New",monospace}
+.muet{color:var(--muted)}
+.petit{font-size:.86rem}
+
+/* ===== barre du haut : argent, notoriété, coup ===== */
+.barre{position:sticky; top:0; z-index:5; background:rgba(17,16,20,.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px}
+.barre .dedans{max-width:560px; margin:0 auto; display:flex; align-items:center; gap:10px}
+.barre .logo{font-size:1.25rem; color:var(--or); flex:1; min-width:0}
+.barre .argent{font-weight:800; font-size:1.05rem; color:var(--vert); font-variant-numeric:tabular-nums}
+.barre .niveau{color:var(--or); font-size:.9rem; white-space:nowrap}
+.barre .menu{background:none; border:1px solid var(--line); border-radius:10px; padding:4px 10px; color:var(--muted)}
+
+/* bandeau de mise à jour */
+.maj{position:sticky; top:0; z-index:6; display:flex; gap:10px; align-items:center; background:var(--or); color:#1a1408; padding:10px 16px; font-weight:600; font-size:.92rem}
+.maj span{flex:1}
+.maj button{background:#1a1408; color:var(--or); border:0; border-radius:10px; padding:8px 12px; font-weight:800}
+
+/* ===== éléments communs ===== */
+.carte{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px; margin:12px 0}
+.btn{display:block; width:100%; padding:14px 16px; border-radius:12px; border:0; font-weight:800; font-size:1rem; background:var(--or); color:#1a1408; margin-top:10px; text-align:center}
+.btn:disabled{opacity:.4}
+.btn.secondaire{background:transparent; border:1px solid var(--line); color:var(--ink); font-weight:600}
+.btn.danger{background:var(--rouge); color:#fff}
+.etoiles{color:var(--or); letter-spacing:1px; white-space:nowrap}
+.etoiles .vide{color:#4a463f}
+.badge{display:inline-block; font-size:.75rem; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--panel2); color:var(--muted); border:1px solid var(--line)}
+.badge.or{background:var(--or-fonce); color:var(--or); border-color:#5a4826}
+.badge.rouge{background:var(--rouge-fond); color:#ff8a8d; border-color:#5a2a2d}
+.badge.vert{background:var(--vert-fond); color:var(--vert); border-color:#245544}
+.prix{font-weight:800; font-size:1.15rem; font-variant-numeric:tabular-nums}
+.trop-cher{color:var(--rouge)}
+.stat{display:grid; grid-template-columns:96px 1fr; align-items:center; gap:8px; font-size:.82rem; color:var(--muted); margin:3px 0}
+.jauge{height:7px; border-radius:4px; background:#2f2c35; overflow:hidden}
+.jauge i{display:block; height:100%; background:var(--or); border-radius:4px}
+.jauge.rouge i{background:var(--rouge)}
+ul.liste{margin:6px 0 0; padding-left:18px}
+ul.liste li{margin:2px 0}
+
+/* ===== accueil ===== */
+.accueil{text-align:center; padding-top:8vh}
+.accueil h1{font-size:clamp(3.2rem,18vw,5rem); line-height:.95; color:var(--or); text-shadow:0 4px 0 #6b4a12, 0 10px 30px rgba(0,0,0,.6)}
+.accueil .sous{color:var(--muted); margin:10px 0 26px}
+.regles{text-align:left}
+.regles p{margin:6px 0}
+
+/* ===== cibles ===== */
+.cible h3{font-size:1.3rem; margin:4px 0 2px}
+.cible .lieu{color:var(--muted); font-size:.9rem}
+.cible .butin{display:flex; justify-content:space-between; align-items:baseline; margin:10px 0 6px; padding:8px 10px; border-radius:10px; background:var(--vert-fond)}
+.cible .butin b{color:var(--vert); font-variant-numeric:tabular-nums}
+.secu{display:grid; grid-template-columns:24px 1fr; gap:4px 6px; font-size:.88rem; margin:8px 0}
+.ambiance{font-style:italic; color:var(--muted); font-size:.88rem; margin-top:6px}
+.cible.gros{border-color:#6b4a12; box-shadow:0 0 0 1px #6b4a12 inset}
+
+/* ===== préparation ===== */
+.resume-cible{display:flex; justify-content:space-between; gap:10px; align-items:center; font-size:.9rem; color:var(--muted)}
+.resume-cible b{color:var(--ink)}
+.budget{display:flex; justify-content:space-between; align-items:center; margin:8px 0 4px; padding:10px 12px; border-radius:12px; background:var(--panel); border:1px solid var(--line)}
+.budget .prix{color:var(--vert)}
+.points{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0}
+.points button{width:38px; height:38px; border-radius:10px; border:1px solid var(--line); background:var(--panel); font-size:1.1rem; padding:0; position:relative}
+.points button.fait{border-color:#5a4826; background:var(--or-fonce)}
+.points button.passe{opacity:.55}
+.points button.actif{outline:2px solid var(--or); outline-offset:1px}
+.etape-titre{font-size:1.6rem; color:var(--or); margin-top:6px}
+.etape-desc{color:var(--muted); margin:2px 0 6px}
+
+.offre{position:relative}
+.offre.choisie{border-color:var(--or); box-shadow:0 0 0 1px var(--or) inset}
+.offre .tete{display:flex; gap:12px; align-items:center}
+.offre .tete canvas{width:64px; height:64px; border-radius:12px; flex:none}
+.offre .nom{font-weight:800; font-size:1.08rem; line-height:1.2}
+.offre .infos{color:var(--muted); font-size:.85rem}
+.offre .pied{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px}
+.offre .pied .btn{width:auto; margin:0; padding:10px 18px}
+.papier{background:var(--papier); color:var(--papier-ink); border-radius:8px; padding:8px 10px; margin-top:10px; font-size:.86rem; line-height:1.4}
+.papier p{margin:3px 0}
+.papier .sec{font-weight:700; text-transform:uppercase; font-size:.72rem; letter-spacing:.08em; opacity:.7; margin-top:6px}
+.papier ul{margin:2px 0; padding-left:16px}
+.papier li{margin:2px 0}
+.objet-icone{font-size:2rem; width:64px; height:64px; border-radius:12px; background:var(--panel2); display:grid; place-items:center; flex:none}
+.alerte-recap{background:var(--rouge-fond); border:1px solid #5a2a2d; color:#ffb3b5; border-radius:12px; padding:8px 12px; margin:6px 0; font-size:.9rem}
+.ligne-recap{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:.93rem}
+.ligne-recap:last-child{border-bottom:0}
+
+/* ===== braquage en direct ===== */
+.direct{position:sticky; top:calc(54px + env(safe-area-inset-top,0px)); z-index:4; display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:12px; background:var(--panel); border:1px solid var(--line); margin:10px 0}
+.direct .temps{font-variant-numeric:tabular-nums; font-weight:800; color:var(--or); min-width:58px}
+.direct .etat{flex:1; font-size:.9rem}
+.direct.alerte{border-color:var(--rouge); animation:gyro 1s infinite}
+@keyframes gyro{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,.0)}50%{box-shadow:0 0 18px 2px rgba(229,72,77,.45)}}
+.log{list-style:none; margin:0; padding:0}
+.log li{padding:8px 12px; margin:6px 0; border-radius:10px; background:var(--panel); border-left:4px solid var(--line); animation:entre .35s ease-out}
+.log li.phase{background:none; border:0; padding:14px 0 2px; font-family:"Anton",Impact,sans-serif; text-transform:uppercase; letter-spacing:.04em; color:var(--or); font-size:1.15rem}
+.log li.bon{border-left-color:var(--vert)}
+.log li.mauvais{border-left-color:var(--rouge)}
+.log li.info{border-left-color:var(--bleu); color:#cfe0ff}
+@keyframes entre{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+
+/* ===== bilan ===== */
+.issue{text-align:center; padding:18px 12px}
+.issue h2{font-size:2.2rem; line-height:1.05}
+.issue.vert h2{color:var(--vert)} .issue.or h2{color:var(--or)} .issue.rouge h2{color:var(--rouge)}
+.compte .ligne-recap b{font-variant-numeric:tabular-nums}
+.membre{display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px dashed var(--line)}
+.membre:last-child{border-bottom:0}
+.membre canvas{width:48px; height:48px; border-radius:10px; flex:none}
+.membre .corps{flex:1; font-size:.9rem}
+
+footer{max-width:560px; margin:0 auto; padding:0 16px calc(20px + env(safe-area-inset-bottom,0px)); color:#6f6a62; font-size:.78rem; text-align:center}
+@media (prefers-reduced-motion: reduce){ .log li{animation:none} .direct.alerte{animation:none} }
+</style>
+</head>
+<body>
+<div class="maj" id="majDispo" hidden><span id="majTexte"></span><button id="majOk">Mettre à jour</button></div>
+<header class="barre" id="barre" hidden>
+  <div class="dedans">
+    <span class="logo titre">Braquage</span>
+    <span class="niveau" id="hNiveau"></span>
+    <span class="argent" id="hArgent"></span>
+    <button class="menu" data-a="menu" aria-label="Menu">☰</button>
+  </div>
+</header>
+<main id="app"></main>
+<footer id="version"></footer>
+
+<script>
+"use strict";
+/* ===== OUTILS ===== */
+const rand = (a, b) => a + Math.random() * (b - a);
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+const choix = a => a[Math.floor(Math.random() * a.length)];
+const chance = p => Math.random() < p;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const melange = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const euros = n => Math.round(n).toLocaleString("fr-FR") + " €";
+// arrondit un prix à un montant « rond » (1 234 → 1 250)
+const arrondiPrix = x => { if (x < 100) return Math.max(10, Math.round(x / 5) * 5); const pas = Math.pow(10, Math.floor(Math.log10(x)) - 1) / 2; return Math.round(x / pas) * pas; };
+const etoiles = (n, max = 5) => `<span class="etoiles">${"★".repeat(n)}<span class="vide">${"★".repeat(Math.max(0, max - n))}</span></span>`;
+const jauge = (x, rouge) => `<div class="jauge${rouge ? " rouge" : ""}"><i style="width:${Math.round(clamp(x) * 100)}%"></i></div>`;
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// accords masculin / féminin : « Ancien{ne} pilote, connu{e} » → « Ancienne pilote, connue »
+const ACCORDS = { e: ["", "e"], ne: ["", "ne"], il: ["il", "elle"], Il: ["Il", "Elle"], lui: ["lui", "elle"], eur: ["eur", "euse"], teur: ["teur", "trice"], er: ["er", "ère"], f: ["f", "ve"], x: ["x", "se"], le: ["le", "la"], Le: ["Le", "La"], un: ["un", "une"] };
+const accord = (s, sexe) => s.replace(/\{(\w+)\}/g, (m, k) => ACCORDS[k] ? ACCORDS[k][sexe === "f" ? 1 : 0] : m);
+
+/* ===== ÉCHELLE DU JEU =====
+   Tout grossit d'un facteur 2,6 par niveau de cible (1 à 8) : les prix des recrues et du matériel comme le butin.
+   On commence avec de quoi monter un petit coup de village ; pour viser plus gros, il faut réinvestir ses gains. */
+const NIVEAU_MAX = 8;
+const PENTE = 1.8; // plus c'est haut, plus la compétence compte (et moins la chance)
+const ARGENT_DEPART = 4000;
+const BASE = t => 400 * Math.pow(2.6, t - 1);           // prix « normal » d'une recrue moyenne pour un coup de niveau t
+const BUTIN_MOYEN = t => BASE(t) * (30 + 6 * t);        // butin moyen d'une cible de niveau t (les gros coups demandent plus de monde, ils rapportent plus)
+
+/* Le prix demandé suit la valeur réelle… la plupart du temps.
+   ~75 % : prix cohérent (±15 %) ; ~12 % : bonne affaire (moitié prix environ) ; ~13 % : arnaque (presque le double). */
+function loiDuPrix(valeur) {
+  const r = Math.random();
+  const f = r < 0.12 ? rand(0.45, 0.75) : r < 0.25 ? rand(1.35, 1.9) : rand(0.85, 1.18);
+  return { prix: arrondiPrix(valeur * f), facteur: f };
+}
+const verdictPrix = f => f < 0.8 ? { txt: "Bonne affaire", c: "vert" } : f > 1.3 ? { txt: "Trop cher payé", c: "rouge" } : { txt: "Prix honnête", c: "" };
+
+/* ===== NOMS ET LIEUX (tout est généré, rien n'est tiré d'une liste de personnages) ===== */
+const PRENOMS = {
+  m: ["Karim", "Julien", "Mehdi", "Thomas", "Kevin", "Franck", "Sébastien", "Yanis", "Lucas", "Bruno", "Rachid", "Mathieu", "Steven", "Didier", "Nicolas", "Patrick", "Sofiane", "Jordan", "Anthony", "Olivier", "Christophe", "Moussa", "Romain", "Alexandre", "Jean-Marc", "Dimitri", "Hugo", "Ludovic", "Farid", "Grégory", "Vincent", "Cédric", "Ibrahim", "Loïc", "Tony", "Marco", "Paolo", "Sacha", "Enzo", "Gilles", "Raymond", "Jacky", "Bilal", "Quentin", "Hervé", "Fabrice", "Mamadou", "Teddy"],
+  f: ["Sarah", "Nadia", "Julie", "Inès", "Camille", "Sandrine", "Laetitia", "Amandine", "Yasmine", "Léa", "Chloé", "Sabrina", "Valérie", "Emma", "Fatou", "Céline", "Manon", "Jessica", "Karine", "Océane", "Lina", "Nathalie", "Aurélie", "Leïla", "Sonia", "Clara", "Marion", "Vanessa", "Noémie", "Samia", "Josiane", "Mélissa", "Aïcha", "Romane", "Brigitte", "Kenza"]
+};
+const NOMS = ["Martin", "Bernard", "Dubois", "Moreau", "Lefèvre", "Garcia", "Roux", "Fontaine", "Mercier", "Benali", "Haddad", "Lambert", "Faure", "Rousseau", "Blanc", "Guérin", "Muller", "Henry", "Perrin", "Morel", "Girard", "André", "Lopez", "Fernandes", "Da Silva", "Ferreira", "Chevalier", "Gauthier", "Masson", "Marchand", "Duval", "Denis", "Lemoine", "Bertin", "Rossi", "Ricci", "Diallo", "Traoré", "Koné", "Nguyen", "Bouvier", "Carpentier", "Leroy", "Barbier", "Renaud", "Schmitt", "Brunet", "Colin", "Vidal", "Arnaud", "Picard", "Bonnet", "Caron", "Hamidi", "Mansouri", "Kowalski", "Novak", "Petrov", "Weber", "Santoni", "Lacroix", "Joly", "Poulain", "Maillard"];
+const VILLES = ["Lyon", "Marseille", "Lille", "Toulouse", "Nantes", "Bordeaux", "Strasbourg", "Montpellier", "Rennes", "Reims", "Saint-Étienne", "Le Havre", "Grenoble", "Dijon", "Angers", "Nîmes", "Clermont-Ferrand", "Limoges", "Tours", "Amiens", "Metz", "Perpignan", "Besançon", "Orléans", "Rouen", "Mulhouse", "Caen", "Nancy", "Avignon", "Valence", "Brest", "Pau", "Calais", "Roubaix", "Toulon", "Nice", "Bastia", "Lens"];
+const GRANDES_VILLES = ["Paris", "Lyon", "Marseille", "Nice", "Bordeaux", "Lille", "Toulouse", "Monaco"];
+const VILLAGE_DEBUT = ["Saint-Julien", "Saint-Amand", "Sainte-Colombe", "Villeneuve", "Montigny", "Fontaine", "Beaumont", "Châteauneuf", "Neuville", "La Roche", "Bourg", "Montfort", "Val", "Saint-Hilaire", "Sainte-Marie", "Fresnoy", "Courtenay", "Le Mesnil", "Saint-Fargeau", "Lussac", "Vaux"];
+const VILLAGE_FIN = ["-sur-Loire", "-en-Bresse", "-les-Bains", "-le-Petit", "-la-Forêt", "-sur-Marne", "-du-Lac", "-en-Vexin", "-sous-Bois", "-le-Vieux", "-sur-Sarthe", "-en-Morvan", "-les-Vignes", "-la-Rivière", "", "", ""];
+const sexeAuHasard = () => chance(0.68) ? "m" : "f";
+const prenom = sexe => choix(PRENOMS[sexe || sexeAuHasard()]);
+const nomFamille = () => choix(NOMS);
+const village = () => choix(VILLAGE_DEBUT) + choix(VILLAGE_FIN);
+
+/* ===== CIBLES =====
+   Chaque type de lieu a un niveau (1 = boutique paumée, 8 = réserve d'or) et un profil de sécurité.
+   Les niveaux de sécurité vont de 0 (rien) à 5 (le maximum). */
+const SECU = {
+  gardes: { icone: "💂", txt: ["Personne pour surveiller", "Le patron, seul derrière le comptoir", "Un vigile", "Deux vigiles", "Une équipe de sécurité armée", "Des gardes d'élite lourdement armés"] },
+  cameras: { icone: "📹", txt: ["Aucune caméra", "Une vieille caméra (peut-être fausse)", "Quelques caméras", "Vidéosurveillance complète", "Caméras reliées à un centre de contrôle", "Surveillance totale, détecteurs de mouvement"] },
+  alarme: { icone: "🚨", txt: ["Pas d'alarme", "Une alarme sonore basique", "Alarme reliée à une société de télésurveillance", "Alarme silencieuse reliée à la police", "Système d'alarme multi-couches", "Système de sécurité de niveau militaire"] },
+  coffre: { icone: "🔐", txt: ["Pas de coffre, juste la caisse", "Un petit coffre-fort", "Un coffre-fort scellé au sol", "Une salle des coffres", "Une chambre forte blindée", "Une chambre forte de haute sécurité"] },
+};
+const NIV_POLICE = { village: [0, 1], bourg: [1, 2], route: [1, 3], ville: [2, 3], grande: [3, 4], capitale: [4, 5] };
+const MINUTES_POLICE = [22, 14, 9, 6, 4, 2.5];
+const TYPES_CIBLES = [
+  // ---- niveau 1 : la campagne
+  { t: 1, type: "Épicerie de village", de: "d'une épicerie", lieu: "village", m: 0.8, recel: 0, niv: { gardes: [0, 1], cameras: [0, 1], alarme: [0, 1], coffre: [0, 1] },
+    nom: () => choix(["Épicerie du Centre", "Épicerie de la Place", `Épicerie Chez ${prenom()}`, "Le Petit Panier", "Alimentation générale " + nomFamille()]),
+    ambiance: ["Le gérant, 72 ans, compte sa caisse tous les soirs à 19 h pile.", "Le chien du patron dort derrière le comptoir. Il a l'air vieux. Très vieux.", "Seul commerce à 20 km à la ronde : tout le village y passe."] },
+  { t: 1, type: "Station-service isolée", de: "d'une station-service", lieu: "village", m: 1, recel: 0, niv: { gardes: [0, 1], cameras: [1, 2], alarme: [0, 1], coffre: [1, 1] },
+    nom: () => `Station-service de la D${randInt(10, 999)}`, ambiance: ["Ouverte 24 h/24, un seul employé la nuit.", "Les routiers y font le plein le vendredi : la caisse déborde.", "Le pompiste écoute la radio à fond et ne lève jamais la tête."] },
+  { t: 1, type: "Bureau de tabac", de: "d'un bureau de tabac", lieu: "village", m: 1.15, recel: 0, niv: { gardes: [0, 1], cameras: [1, 1], alarme: [1, 1], coffre: [0, 1] },
+    nom: () => choix(["Tabac-Presse du Centre", "Le Balto", "Tabac de la Mairie", `Tabac ${nomFamille()}`]), ambiance: ["Jour de super cagnotte au loto : la caisse est pleine.", "La buraliste connaît tout le monde par son prénom.", "Le gendarme du village y achète son journal tous les matins."] },
+  { t: 1, type: "Buvette du stade", de: "de la buvette du stade", lieu: "village", m: 0.6, recel: 0, niv: { gardes: [0, 0], cameras: [0, 0], alarme: [0, 0], coffre: [0, 0] },
+    nom: () => `Buvette de l'US ${village().split("-")[0]}`, ambiance: ["Soir de derby contre le village voisin : bières et merguez à volonté.", "La recette est dans une boîte en fer, derrière les saucisses.", "Le trésorier du club compte l'argent… quand il n'oublie pas."] },
+  // ---- niveau 2 : les petites villes
+  { t: 2, type: "Supérette", de: "d'une supérette", lieu: "bourg", m: 1, recel: 0, niv: { gardes: [1, 1], cameras: [1, 2], alarme: [1, 2], coffre: [1, 1] },
+    nom: () => choix(["Supérette du Marché", "Mini-Marché " + nomFamille(), "Proxi des Tilleuls", "L'Épi d'Or"]), ambiance: ["Les fonds sont ramassés le lundi : le week-end, tout est dans le coffre.", "Le vigile est le neveu du patron. Il a 19 ans.", "Ouverte jusqu'à 22 h, deux caisses."] },
+  { t: 2, type: "Bureau de poste", de: "d'un bureau de poste", lieu: "bourg", m: 1.2, recel: 0, niv: { gardes: [0, 1], cameras: [1, 2], alarme: [2, 2], coffre: [1, 2] },
+    nom: () => "Bureau de poste", ambiance: ["Jour de versement des pensions : beaucoup de liquide.", "Le guichetier est là depuis 1987 et n'a jamais pris un jour de congé.", "La porte de derrière ferme mal depuis des années."] },
+  { t: 2, type: "Bar-PMU", de: "d'un bar-PMU", lieu: "bourg", m: 0.9, recel: 0, niv: { gardes: [0, 1], cameras: [1, 1], alarme: [1, 1], coffre: [1, 1] },
+    nom: () => choix(["Bar-PMU Le Narval", "Le Week-End", "Bar des Sports", "Le Longchamp", "Café du Commerce"]), ambiance: ["Dimanche de Quinté+ : les parieurs paient en liquide.", "Les habitués ne quittent jamais leur tabouret.", "Le patron cache la recette sous le flipper."] },
+  { t: 2, type: "Pharmacie de garde", de: "d'une pharmacie", lieu: "bourg", m: 0.8, recel: 0.2, niv: { gardes: [0, 0], cameras: [2, 2], alarme: [1, 2], coffre: [1, 1] },
+    nom: () => `Pharmacie ${choix(["du Centre", "de la Gare", "des Halles", nomFamille()])}`, ambiance: ["De garde ce week-end : une seule pharmacienne.", "Le coffre contient la caisse… et quelques produits qui se revendent bien.", "Une patrouille passe toutes les deux heures, à peu près."] },
+  // ---- niveau 3 : les villes moyennes
+  { t: 3, type: "Bijouterie de quartier", de: "d'une bijouterie", lieu: "ville", m: 1.2, recel: 0.35, niv: { gardes: [1, 2], cameras: [2, 3], alarme: [2, 3], coffre: [2, 2] },
+    nom: () => `Bijouterie ${nomFamille()} & Fils`, ambiance: ["Les bijoux, ça se revend… mais le receleur prend sa part.", "Le bijoutier ouvre la porte avec un bouton : il faut qu'il ait confiance.", "Nouvelle collection arrivée cette semaine."] },
+  { t: 3, type: "Agence de transfert d'argent", de: "d'une agence de transfert d'argent", lieu: "ville", m: 1, recel: 0, niv: { gardes: [1, 2], cameras: [2, 2], alarme: [2, 2], coffre: [1, 2] },
+    nom: () => choix(["Cash Express", "Transfert Rapide", "Monde Transferts"]), ambiance: ["Fin de mois : files d'attente et liquide en masse.", "Une vitre blindée sépare le guichet… mais la porte de service, non.", "Deux employés, un vigile qui fume dehors."] },
+  { t: 3, type: "Salle de bingo", de: "d'une salle de bingo", lieu: "ville", m: 1.1, recel: 0, niv: { gardes: [1, 2], cameras: [2, 2], alarme: [1, 2], coffre: [2, 2] },
+    nom: () => choix(["Bingo Royal", "Le Grand Loto", "Bingo des Familles"]), ambiance: ["Soirée spéciale super gros lot : salle comble.", "Les mamies sont plus coriaces que le vigile.", "La recette part dans un coffre au fond de la salle."] },
+  { t: 3, type: "Concession de voitures", de: "d'une concession automobile", lieu: "ville", m: 0.9, recel: 0, niv: { gardes: [1, 1], cameras: [2, 3], alarme: [2, 2], coffre: [1, 2] },
+    nom: () => `Garage ${nomFamille()} Automobiles`, ambiance: ["Certains clients paient en liquide. Beaucoup de liquide.", "Le patron dort parfois dans son bureau.", "Grande vitrine, pas de rideau de fer."] },
+  // ---- niveau 4 : les banques
+  { t: 4, type: "Agence bancaire", de: "d'une agence bancaire", lieu: "ville", m: 1, recel: 0, niv: { gardes: [2, 2], cameras: [3, 3], alarme: [3, 3], coffre: [3, 3] },
+    nom: () => `Agence ${choix(["Crédit", "Banque", "Caisse"])} ${choix(["Régional", "Populaire", "du Commerce", "Mutuelle"])}`, ambiance: ["Le directeur arrive toujours le premier, à 8 h 12.", "Le distributeur vient d'être rempli.", "Le sas d'entrée est en panne depuis une semaine."] },
+  { t: 4, type: "Bureau de change", de: "d'un bureau de change", lieu: "grande", m: 1, recel: 0.05, niv: { gardes: [1, 2], cameras: [3, 3], alarme: [3, 3], coffre: [2, 3] },
+    nom: () => choix(["Change Opéra", "Global Change", "Euro Devises"]), ambiance: ["Plein de devises étrangères : un peu de frais pour les écouler.", "Les touristes font la queue toute la journée.", "Une seule employée derrière la vitre blindée."] },
+  { t: 4, type: "Hippodrome", de: "des guichets d'un hippodrome", lieu: "ville", m: 1.2, recel: 0, niv: { gardes: [2, 3], cameras: [2, 3], alarme: [2, 2], coffre: [2, 3] },
+    nom: () => `Hippodrome de ${choix(VILLES)}`, ambiance: ["Dimanche de Grand Prix : les guichets débordent.", "La recette part en fourgon à 18 h.", "Des milliers de personnes : facile de se fondre dans la foule."] },
+  // ---- niveau 5 : le luxe
+  { t: 5, type: "Bijouterie de luxe", de: "d'une bijouterie de luxe", lieu: "grande", m: 1.2, recel: 0.4, niv: { gardes: [2, 3], cameras: [3, 4], alarme: [3, 4], coffre: [3, 4] },
+    nom: () => `Maison ${nomFamille()}, joaillier`, ambiance: ["Une rivière de diamants est exposée cette semaine.", "Clientèle VIP sur rendez-vous uniquement.", "Les vitrines sont blindées. Le coffre, encore plus."] },
+  { t: 5, type: "Hôtel des ventes", de: "d'un hôtel des ventes", lieu: "grande", m: 1.1, recel: 0.5, niv: { gardes: [2, 3], cameras: [3, 3], alarme: [3, 4], coffre: [3, 3] },
+    nom: () => `Hôtel des ventes ${nomFamille()}`, ambiance: ["Grande vente de tableaux demain : tout est déjà sur place.", "Un tableau, c'est cher… et très dur à revendre.", "Le commissaire-priseur garde les clés sur lui."] },
+  { t: 5, type: "Coffres d'un palace", de: "des coffres d'un palace", lieu: "grande", m: 1, recel: 0.3, niv: { gardes: [3, 3], cameras: [3, 4], alarme: [3, 3], coffre: [3, 4] },
+    nom: () => `Hôtel ${choix(["Royal", "Impérial", "Excelsior", "Majestic"])} *****`, ambiance: ["Un émir occupe tout le dernier étage.", "Les clients laissent montres et bijoux dans les coffres de la réception.", "Le concierge sait tout, et il est mal payé."] },
+  // ---- niveau 6 : les gros coups
+  { t: 6, type: "Fourgon blindé", de: "d'un fourgon blindé", lieu: "route", m: 1, recel: 0, niv: { gardes: [3, 4], cameras: [0, 1], alarme: [2, 3], coffre: [4, 4] },
+    nom: () => `Fourgon sur l'A${randInt(4, 89)}`, ambiance: ["Trois convoyeurs armés, un trajet toujours identique.", "Pas de caméra sur la route, mais un bouton d'alerte dans la cabine.", "Le fourgon passe un péage à 6 h 40."] },
+  { t: 6, type: "Casino", de: "d'un casino", lieu: "grande", m: 1.1, recel: 0, niv: { gardes: [4, 4], cameras: [4, 5], alarme: [3, 4], coffre: [3, 4] },
+    nom: () => `Casino ${choix(["du Lac", "Barrière Bleue", "Le Lido", "Le Palais"])}`, ambiance: ["Soirée de grand tournoi de poker.", "Les caméras filment chaque table, chaque visage.", "La salle de comptage est au sous-sol."] },
+  { t: 6, type: "Diamantaire", de: "d'un diamantaire", lieu: "grande", m: 1.2, recel: 0.45, niv: { gardes: [3, 4], cameras: [4, 4], alarme: [4, 4], coffre: [4, 5] },
+    nom: () => `Diamants ${nomFamille()}`, ambiance: ["Un lot de diamants bruts vient d'arriver d'Anvers.", "Les diamants se revendent loin, et à moitié prix.", "Personne n'entre sans un code et une empreinte."] },
+  // ---- niveau 7 : les forteresses
+  { t: 7, type: "Centre-fort de transport de fonds", de: "d'un centre-fort", lieu: "ville", m: 1, recel: 0, niv: { gardes: [4, 5], cameras: [4, 5], alarme: [4, 5], coffre: [4, 5] },
+    nom: () => `Centre-fort de ${choix(VILLES)}`, ambiance: ["Tout l'argent de la région passe par ici.", "Les gardes s'entraînent au tir tous les jeudis.", "Les portes blindées pèsent 3 tonnes."] },
+  { t: 7, type: "Banque régionale", de: "de la chambre forte d'une banque", lieu: "grande", m: 1.1, recel: 0.1, niv: { gardes: [3, 4], cameras: [4, 5], alarme: [4, 5], coffre: [5, 5] },
+    nom: () => `Banque Régionale de ${choix(GRANDES_VILLES)}`, ambiance: ["Des centaines de coffres de particuliers : liquide, bijoux, secrets.", "La chambre forte est à 12 mètres sous terre.", "Le système de sécurité a été installé l'an dernier."] },
+  { t: 7, type: "Port franc", de: "d'un port franc", lieu: "grande", m: 1.2, recel: 0.5, niv: { gardes: [3, 4], cameras: [4, 4], alarme: [4, 5], coffre: [4, 5] },
+    nom: () => "Port franc international", ambiance: ["Des œuvres d'art que personne ne déclare jamais.", "Les propriétaires ne porteront peut-être même pas plainte…", "Revendre un Picasso, ça prend du temps."] },
+  // ---- niveau 8 : la légende
+  { t: 8, type: "Réserve d'or", de: "de la réserve d'or", lieu: "capitale", lieuFixe: "Paris", m: 1.1, recel: 0.3, niv: { gardes: [5, 5], cameras: [5, 5], alarme: [5, 5], coffre: [5, 5] },
+    nom: () => "Réserve d'or de la Banque centrale", ambiance: ["Des tonnes de lingots, à 27 mètres sous terre.", "Le coup du siècle. Personne n'a jamais essayé.", "Les lingots sont numérotés : le receleur va se servir."] },
+  { t: 8, type: "Imprimerie de billets", de: "de l'imprimerie de billets", lieu: "capitale", lieuFixe: "Paris", m: 1, recel: 0.2, niv: { gardes: [4, 5], cameras: [5, 5], alarme: [5, 5], coffre: [4, 5] },
+    nom: () => "Imprimerie nationale de billets", ambiance: ["Des billets neufs, pas encore enregistrés.", "Les palettes sortent sous escorte militaire.", "Un employé aurait des dettes de jeu…"] },
+  { t: 8, type: "Banque privée suisse", de: "d'une banque privée suisse", lieu: "capitale", lieuFixe: "Genève", m: 1.2, recel: 0.1, niv: { gardes: [4, 5], cameras: [5, 5], alarme: [5, 5], coffre: [5, 5] },
+    nom: () => `Banque ${nomFamille()} & Cie`, ambiance: ["Les clients ne porteront jamais plainte : leur argent n'existe pas officiellement.", "La police suisse est rapide. Très rapide.", "Trois chambres fortes, trois codes différents."] },
+];
+
+function genererCible(t) {
+  const type = choix(TYPES_CIBLES.filter(c => c.t === t));
+  const niv = {};
+  for (const k of Object.keys(SECU)) niv[k] = randInt(type.niv[k][0], type.niv[k][1]);
+  niv.police = randInt(...NIV_POLICE[type.lieu]);
+  const lieu = type.lieuFixe || ({ village: village, bourg: village, route: () => "en rase campagne", ville: () => choix(VILLES), grande: () => choix(GRANDES_VILLES) }[type.lieu])();
+  const butin = BUTIN_MOYEN(t) * type.m * rand(0.65, 1.45);
+  const estimation = butin * rand(0.75, 1.25); // l'estimation n'est jamais exacte
+  return {
+    id: Math.random().toString(36).slice(2, 10), t, type: type.type, de: type.de, nom: type.nom(), lieu, niv, butin, recel: type.recel,
+    butinMin: arrondiPrix(estimation * 0.7), butinMax: arrondiPrix(estimation * 1.3),
+    minutesPolice: Math.max(2, Math.round(MINUTES_POLICE[niv.police] * rand(0.8, 1.25))),
+    gendarmerie: type.lieu === "village" || type.lieu === "bourg" || type.lieu === "route",
+    ambiance: choix(type.ambiance),
+  };
+}
+// Les trois cibles proposées : une plus petite (s'il y en a), une à son niveau, une plus grosse (le « gros coup »)
+function proposerCibles(niveau) {
+  const tiers = [Math.max(1, niveau - 1), niveau, Math.min(NIVEAU_MAX, niveau + 1)];
+  if (niveau === 1) tiers[0] = 1;
+  return tiers.map(genererCible);
+}
+
+/* ===== RECRUES =====
+   Chaque recrue a un vrai niveau caché (s, de 0 à 1). Tout le reste en découle : son passé, sa réputation, ses surnoms…
+   Le prix suit le vrai niveau, avec la loi du prix (bonnes affaires et arnaques). À toi de lire entre les lignes. */
+const ROLES = {
+  chef: { nom: "Chef d'équipe", icone: "🧠", prix: 1.4, desc: "Coordonne toute l'équipe : améliore chaque étape et évite la panique." },
+  chauffeur: { nom: "Chauffeur", icone: "🚗", prix: 1, desc: "L'approche discrète et, surtout, la fuite." },
+  grosbras: { nom: "Gros bras", icone: "💪", prix: 0.8, desc: "Maîtrise les vigiles et les clients sans que ça dégénère." },
+  pirate: { nom: "Pirate informatique", icone: "💻", prix: 1.2, desc: "Coupe l'alarme et les caméras. Il lui faut un bon kit." },
+  perceur: { nom: "Perceur de coffre", icone: "🔓", prix: 1.2, desc: "Ouvre le coffre, vite et bien. Il lui faut du bon matériel." },
+  logisticien: { nom: "Logisticien", icone: "🧰", prix: 0.7, desc: "Prépare et vérifie le matériel : tout marche mieux et tombe moins en panne." },
+  guetteur: { nom: "Guetteur", icone: "👀", prix: 0.5, desc: "Surveille l'extérieur et prévient quand la police arrive." },
+};
+const TRAITS = {
+  sangfroid: { bon: true, nom: "Sang-froid", rumeur: "Garde son calme quoi qu'il arrive." },
+  loyal: { bon: true, nom: "Loyal", rumeur: "N'a jamais balancé personne, même après des années de prison." },
+  discret: { bon: true, nom: "Discret", rumeur: "Personne ne se souvient jamais de son visage." },
+  methodique: { bon: true, nom: "Méthodique", rumeur: "Prépare tout dans le moindre détail." },
+  bavard: { bon: false, nom: "Bavard", rumeur: "Parle beaucoup. Surtout après deux verres." },
+  nerveux: { bon: false, nom: "Nerveux", rumeur: "Transpire beaucoup quand ça se complique." },
+  gachette: { bon: false, nom: "Gâchette facile", rumeur: "A tendance à tirer d'abord et à réfléchir ensuite." },
+  endette: { bon: false, nom: "Endetté", rumeur: "Doit beaucoup d'argent à des gens pas très patients." },
+};
+// métier « civil », selon le niveau (faible / moyen / fort)
+const FONDS = {
+  chauffeur: [["Livr{eur} de pizzas en scooter", "A raté son permis trois fois", "Chauff{eur} de bus scolaire, licencié{e} pour excès de vitesse"], ["Ancien{ne} chauff{eur} VTC", "Mécanicien{ne} dans un garage", "Coursi{er} à moto"], ["Ancien{ne} pilote de rallye", "Cascad{eur} pour le cinéma", "Ex-chauff{eur} d'un ministre"]],
+  grosbras: [["Fait de la musculation depuis deux mois", "Videur de boîte de nuit… viré{e} au bout d'une semaine", "Agent{e} de sécurité stagiaire"], ["Ancien{ne} videur", "Boxe en amateur depuis dix ans", "Agent de sécurité dans un centre commercial"], ["Ancien{ne} légionnaire", "Champion{ne} régional{e} de boxe thaï", "Ex-garde du corps d'un chanteur célèbre"]],
+  pirate: [["A réinstallé Windows une fois", "Répare les téléphones au marché", "Se dit « hackeur » sur les réseaux sociaux"], ["Technicien{ne} informatique", "Étudiant{e} en cybersécurité", "Développe des sites internet en freelance"], ["Ancien{ne} ingénieur{e} sécurité d'une banque", "Pseudo légendaire sur les forums", "A piraté un ministère à 16 ans"]],
+  perceur: [["En apprentissage chez un serrurier", "Ouvre les bocaux de cornichons, c'est déjà ça", "Bricol{eur} du dimanche"], ["Serrurier depuis 15 ans", "Ancien{ne} ouvri{er} chez un fabricant de coffres", "Soud{eur} dans l'industrie"], ["A ouvert un coffre suisse en 11 minutes", "Ancien{ne} démin{eur} de l'armée", "Formé{e} par un perceur célèbre des années 80"]],
+  chef: [["A organisé le vol de la caisse de la kermesse", "Gérant{e} d'un snack", "Ancien{ne} délégué{e} de classe"], ["Ancien{ne} sous-offici{er}", "Patron{ne} d'une entreprise de BTP", "Ancien{ne} chef de rayon"], ["Cerveau supposé de plusieurs coups jamais élucidés", "Ancien{ne} négocia{teur} du RAID passé{e} de l'autre côté", "Surnommé{e} « le fantôme » par la police judiciaire"]],
+  logisticien: [["Magasini{er} dans une jardinerie", "Perd souvent ses clés", "Bricol{eur} du dimanche"], ["Ancien{ne} intendant{e} militaire", "Construit des décors de théâtre", "Chef de chantier"], ["Ex-logisticien{ne} d'un réseau international", "Ingénieur{e} reconverti{e}", "Prépare le matériel des meilleures équipes depuis 20 ans"]],
+  guetteur: [["Fac{teur} à mi-temps", "S'endort facilement", "Regarde beaucoup son téléphone"], ["Ancien{ne} vigile de parking", "Photographe animali{er}, très patient{e}", "Chauffeur de taxi de nuit"], ["Ancien{ne} tireur d'élite", "Ex-polici{er} des stups", "Ornithologue : repère un képi à 500 mètres"]],
+};
+const SURNOMS = {
+  chauffeur: ["Pied-Lourd", "Turbo", "le Pilote", "Rallye", "Chrono", "Drift"], grosbras: ["le Mur", "Bulldozer", "Grizzly", "Tank", "Marteau", "l'Armoire"],
+  pirate: ["Pixel", "Zéro", "Bug", "Ghost", "Byte", "Wifi"], perceur: ["Doigts-de-Fée", "la Serrure", "Stéthoscope", "Tic-Tac", "Silence", "Clé-de-Sol"],
+  chef: ["le Professeur", "le Boss", "Cerveau", "l'Architecte", "le Général", "Patron"], logisticien: ["Bricolo", "Système D", "Couteau-Suisse", "l'Intendant", "Scotch"],
+  guetteur: ["l'Œil", "Radar", "la Vigie", "Hibou", "Jumelles", "Périscope"],
+};
+const SURNOMS_GENERIQUES = ["le Chat", "la Fouine", "Petit{e}", "{le} Belge", "Bébé", "la Rouille", "Cramé{e}", "Blanco", "Mimosa", "Requin", "{le} Marseillais{e}"];
+const SURNOMS_IRONIQUES = ["Calamité", "Pas-de-Bol", "Boulette", "Courant d'Air", "Patate", "Gaffe", "Oups"];
+const ISSUES = {
+  chauffeur: { ok: ["fuite sans une égratignure", "a semé trois voitures de police", "itinéraire parfait, personne n'a rien vu", "a passé un barrage en marche arrière"], ko: ["a calé au démarrage", "a embouti un abribus", "s'est perdu{e} dans un sens unique", "arrêté{e} au bout de 2 km"] },
+  grosbras: { ok: ["a maîtrisé deux vigiles à mains nues", "personne n'a osé bouger", "calme et efficace"], ko: ["s'est fait désarmer par une caissière", "a frappé la mauvaise personne", "s'est enfui{e} au premier cri"] },
+  pirate: { ok: ["alarme coupée en 40 secondes", "caméras en boucle, comme au cinéma", "aucune trace dans les serveurs"], ko: ["a déclenché l'alarme en voulant la couper", "s'est connecté{e} avec son vrai nom", "a oublié son ordinateur sur place"] },
+  perceur: { ok: ["coffre ouvert en 9 minutes", "n'a même pas rayé la porte", "a ouvert le coffre… et celui d'à côté"], ko: ["a cassé trois forets sans résultat", "a soudé la porte au lieu de l'ouvrir", "a mis le feu à la moquette"] },
+  chef: { ok: ["plan exécuté à la minute près", "toute l'équipe est rentrée libre", "jamais élucidé"], ko: ["toute l'équipe arrêtée", "avait oublié de prévoir la fuite", "s'est trompé{e} d'adresse"] },
+  logisticien: { ok: ["matériel impeccable", "avait tout prévu, même des talkies de secours", "zéro panne"], ko: ["la perceuse n'était pas chargée", "les cagoules étaient trop petites", "avait oublié les sacs"] },
+  guetteur: { ok: ["a repéré la patrouille trois rues avant", "équipe prévenue à temps", "invisible toute la nuit"], ko: ["s'est endormi{e} dans la voiture", "regardait son téléphone", "a confondu une ambulance et la police"] },
+};
+const REPUTATIONS = [
+  ["Personne n'a jamais entendu parler de {lui}.", "Ceux qui ont travaillé avec {lui} ne veulent plus en parler.", "On t'a déconseillé de {le} prendre. Mais bon."],
+  ["Connu{e} dans le quartier, sans plus.", "Fait le job, sans briller.", "Quelques bons échos, quelques mauvais."],
+  ["Une valeur sûre, d'après plusieurs anciens.", "Son nom revient souvent quand on cherche du monde sérieux.", "Recommandé{e} par un ami de confiance."],
+  ["Une légende dans le milieu.", "Les meilleures équipes se {le} disputent.", "La police {le} cherche depuis des années. Sans succès."],
+];
+
+// sans aucun coup derrière soi, la réputation parle du potentiel
+const DEBUTANTS = [
+  ["Un{e} débutant{e}, et ça se voit.", "Personne ne {le} connaît, et ça ne rassure pas.", "Veut « essayer pour voir »."],
+  ["Débutant{e}, mais sérieu{x}, paraît-il.", "Jamais testé{e} sur un vrai coup.", "Motivé{e}. C'est déjà ça."],
+  ["Jamais fait de braquage, mais on dit qu'{il} a un vrai talent.", "Un{e} jeune qui promet, d'après ceux qui l'ont vu{e} faire.", "Pas d'expérience du milieu, mais un sacré CV."],
+];
+function genererRecrue(role, t) {
+  const sexe = sexeAuHasard();
+  // vrai niveau : moyenne de 3 tirages, étirée (beaucoup de moyens, quelques très bons et très mauvais)
+  const s = clamp(0.5 + ((Math.random() + Math.random() + Math.random()) / 3 - 0.5) * 1.8, 0.03, 0.98);
+  const age = randInt(19, 63);
+  const traits = [];
+  const tirer = (id, p) => { if (chance(p) && !traits.includes(id)) traits.push(id); };
+  tirer("sangfroid", 0.08 + 0.18 * s); tirer("methodique", 0.06 + 0.15 * s); tirer("loyal", 0.15); tirer("discret", 0.12);
+  tirer("bavard", 0.16 - 0.08 * s); tirer("nerveux", 0.2 - 0.15 * s); tirer("endette", 0.12);
+  if (role === "grosbras" || chance(0.3)) tirer("gachette", 0.14);
+  if (traits.includes("sangfroid")) { const i = traits.indexOf("nerveux"); if (i >= 0) traits.splice(i, 1); }
+  if (traits.includes("loyal")) { const i = traits.indexOf("bavard"); if (i >= 0) traits.splice(i, 1); }
+  while (traits.length > 3) traits.pop();
+  // une partie des traits seulement est connue (rumeurs) ; le reste se découvre… pendant le coup
+  const connus = traits.filter(() => chance(0.65));
+  // surnom
+  let surnom = null;
+  if (chance(0.55)) surnom = s < 0.3 && chance(0.5) ? choix(SURNOMS_IRONIQUES) : chance(0.65) ? choix(SURNOMS[role]) : accord(choix(SURNOMS_GENERIQUES), sexe);
+  // passé : plus on est bon, plus on a fait de coups, plus ils étaient gros, plus ils ont réussi
+  const nbCoups = clamp(Math.round(rand(0, 1) * (age - 17) / 6 * (0.35 + s * 1.1)), 0, 5);
+  const coups = [];
+  let condamnations = 0, prison = 0;
+  for (let i = 0; i < nbCoups; i++) {
+    const tPasse = clamp(Math.round(s * 7 + rand(-1.6, 1.4)), 1, 8);
+    const type = choix(TYPES_CIBLES.filter(c => c.t === tPasse));
+    const ok = chance(0.2 + 0.72 * s);
+    const lieu = type.lieuFixe || (type.t <= 2 ? village() : choix(VILLES));
+    if (!ok && chance(0.6)) { condamnations++; prison += randInt(1, 6); }
+    coups.push({ annee: randInt(Math.max(2000, 2026 - (age - 18)), 2025), txt: `casse ${type.de} (${lieu}) : ${accord(choix(ISSUES[role][ok ? "ok" : "ko"]), sexe)}` });
+  }
+  if (chance(0.2)) { condamnations++; prison += randInt(1, 3); } // petits délits sans rapport
+  coups.sort((a, b) => a.annee - b.annee);
+  const bande = s < 0.35 ? 0 : s < 0.68 ? 1 : 2;
+  const repBande = clamp((s < 0.25 ? 0 : s < 0.5 ? 1 : s < 0.78 ? 2 : 3) + (chance(0.15) ? choix([-1, 1]) : 0), 0, 3); // la réputation se trompe parfois
+  const valeur = BASE(t) * ROLES[role].prix * (0.25 + 1.75 * Math.pow(s, 1.6));
+  const { prix, facteur } = loiDuPrix(valeur);
+  const p = prenom(sexe), n = nomFamille();
+  return {
+    id: Math.random().toString(36).slice(2, 10), role, sexe, prenom: p, nom: n, surnom, age, s, traits, connus, prix, facteur,
+    ville: chance(0.5) ? choix(VILLES) : village(), fond: accord(choix(FONDS[role][bande]), sexe),
+    reputation: accord(choix(nbCoups ? REPUTATIONS[repBande] : DEBUTANTS[Math.min(2, Math.floor(repBande * 0.75))]), sexe), coups, condamnations, prison, graine: randInt(1, 2 ** 31 - 1),
+    court: surnom ? `« ${surnom} »` : p,
+  };
+}
+const nomComplet = r => r.surnom ? `${r.prenom} « ${r.surnom} » ${r.nom}` : `${r.prenom} ${r.nom}`;
+const vraiNiveau = s => clamp(Math.round(s * 4.4 + 0.6), 1, 5);
+
+/* ===== MATÉRIEL =====
+   Le matériel se voit (vitesse, efficacité…), mais pas sa fiabilité : il faut se fier au vendeur.
+   Les informateurs, eux, peuvent dire vrai… ou raconter n'importe quoi. */
+const BOUTIQUES = {
+  vehicule: { nom: "Véhicule", icone: "🚙", prix: 1.2, desc: "Pour l'approche et la fuite. Attention au nombre de places !", sans: "Pas de véhicule (fuite à pied…)" },
+  armes: { nom: "Armes", icone: "🔫", prix: 0.6, desc: "Pour intimider. Plus c'est lourd, plus ça impressionne… et plus une bavure coûte cher.", sans: "Pas d'armes" },
+  ouverture: { nom: "Matériel d'ouverture", icone: "🪛", prix: 0.7, desc: "Pour ouvrir le coffre. Indispensable à ton perceur.", sans: "Pas de matériel" },
+  piratage: { nom: "Kit de piratage", icone: "📡", prix: 0.7, desc: "Pour couper l'alarme et les caméras. Indispensable à ton pirate.", sans: "Pas de kit" },
+  infos: { nom: "Informations", icone: "🗂️", prix: 0.3, desc: "Des informateurs vendent ce qu'ils savent. Tu peux en acheter plusieurs… s'ils disent vrai.", sans: "Rien acheter", multi: true },
+};
+const VEHICULES = [
+  { nom: "Voiture sans permis", tmin: 1, vitesse: 0.05, discretion: 0.9, places: 2, coffre: 0.1 },
+  { nom: "Citadine", tmin: 1, vitesse: 0.4, discretion: 0.75, places: 4, coffre: 0.3 },
+  { nom: "Vieille camionnette de boulanger", tmin: 1, vitesse: 0.25, discretion: 0.85, places: 2, coffre: 0.8 },
+  { nom: "Berline diesel", tmin: 1, vitesse: 0.6, discretion: 0.7, places: 5, coffre: 0.5 },
+  { nom: "Break familial", tmin: 1, vitesse: 0.5, discretion: 0.85, places: 5, coffre: 0.7 },
+  { nom: "Utilitaire de chantier", tmin: 1, vitesse: 0.35, discretion: 0.75, places: 3, coffre: 1 },
+  { nom: "Moto sportive", tmin: 1, vitesse: 0.95, discretion: 0.4, places: 2, coffre: 0.15 },
+  { nom: "SUV aux vitres teintées", tmin: 2, vitesse: 0.7, discretion: 0.45, places: 5, coffre: 0.7 },
+  { nom: "Coupé sport", tmin: 2, vitesse: 0.95, discretion: 0.2, places: 2, coffre: 0.3 },
+  { nom: "Fourgon banalisé", tmin: 2, vitesse: 0.45, discretion: 0.65, places: 8, coffre: 1 },
+  { nom: "Berline puissante", tmin: 3, vitesse: 0.85, discretion: 0.55, places: 5, coffre: 0.55 },
+  { nom: "Ambulance maquillée", tmin: 4, vitesse: 0.65, discretion: 0.95, places: 4, coffre: 0.6 },
+  { nom: "Fourgon blindé d'occasion", tmin: 5, vitesse: 0.4, discretion: 0.5, places: 6, coffre: 1 },
+  { nom: "Hélicoptère", tmin: 7, vitesse: 1, discretion: 0.3, places: 5, coffre: 0.6 },
+];
+const COULEURS = ["grise", "noire", "blanche", "bleu marine", "rouge", "vert bouteille", "beige", "jaune moutarde"];
+const ARMES = [
+  { nom: "Répliques en plastique", tmin: 1, q: 0.3, violence: 0 },
+  { nom: "Battes et bombes lacrymogènes", tmin: 1, q: 0.35, violence: 0.1 },
+  { nom: "Pistolets", tmin: 1, q: 0.6, violence: 0.35 },
+  { nom: "Fusils à pompe", tmin: 3, q: 0.8, violence: 0.55 },
+  { nom: "Fusils d'assaut", tmin: 5, q: 0.95, violence: 0.7 },
+];
+const OUVERTURE = [
+  { nom: "Pied-de-biche et disqueuse", tmin: 1, q: 0.25 },
+  { nom: "Perceuse à percussion", tmin: 1, q: 0.4 },
+  { nom: "Perceuse à carottage diamant", tmin: 2, q: 0.6 },
+  { nom: "Lance thermique", tmin: 4, q: 0.8 },
+  { nom: "Charges de découpe", tmin: 6, q: 0.95 },
+];
+const PIRATAGE = [
+  { nom: "Brouilleur acheté sur internet", tmin: 1, q: 0.25 },
+  { nom: "Ordinateur portable et logiciels douteux", tmin: 1, q: 0.4 },
+  { nom: "Valise de piratage professionnelle", tmin: 3, q: 0.65 },
+  { nom: "Porte dérobée vendue par un initié", tmin: 5, q: 0.85 },
+  { nom: "Kit d'origine militaire", tmin: 7, q: 0.95 },
+];
+const INFOS = {
+  cameras: { nom: "Plan des caméras", icone: "📹", attr: "cameras", desc: "Où sont les caméras et les angles morts." },
+  gardes: { nom: "Horaires des vigiles", icone: "💂", attr: "gardes", desc: "Les rondes, les pauses, qui est armé." },
+  alarme: { nom: "Code de l'alarme", icone: "🚨", attr: "alarme", desc: "De quoi couper l'alarme beaucoup plus facilement." },
+  coffre: { nom: "Modèle exact du coffre", icone: "🔐", attr: "coffre", desc: "Le perceur saura exactement où attaquer." },
+  butin: { nom: "Emplacement du magot", icone: "💰", desc: "Où est rangé l'argent : on en ramasse plus, plus vite." },
+  police: { nom: "Patrouilles et itinéraire de fuite", icone: "🗺️", desc: "Les routes à éviter et le meilleur chemin pour disparaître." },
+};
+const SOURCES = [
+  { txt: "Un{e} ancien{ne} employé{e}, licencié{e} le mois dernier", rel: [0.7, 0.95] },
+  { txt: "{Le} cousin{e} d'un des vigiles", rel: [0.6, 0.9] },
+  { txt: "Un type croisé au PMU, qui « connaît du monde »", rel: [0.25, 0.6] },
+  { txt: "Un policier pas très net", rel: [0.65, 0.95] },
+  { txt: "Un pseudo anonyme sur un forum", rel: [0.35, 0.85] },
+  { txt: "La femme de ménage des lieux", rel: [0.75, 0.97] },
+  { txt: "Un livreur qui passe tous les jours", rel: [0.55, 0.85] },
+  { txt: "Une voyante extralucide (elle insiste)", rel: [0.03, 0.25] },
+];
+const VENDEURS = [
+  ["Fournisseur connu, jamais une plainte.", "Travaille avec les meilleures équipes depuis des années.", "Te montre que tout marche, sans qu'on lui demande."],
+  ["Sérieux, d'après un ami.", "Laisse vérifier la marchandise devant lui.", "Un peu cher en général, mais fiable."],
+  ["Un peu pressé de conclure.", "Ne laisse pas essayer : « Ça marche, je te dis ».", "Change de numéro tous les mois."],
+  ["Sent l'alcool à 10 h du matin.", "Rendez-vous sur un parking, il garde le moteur allumé.", "Il a déjà essayé de te vendre une montre « en or »."],
+];
+const avisVendeur = rel => { let b = rel >= 0.9 ? 0 : rel >= 0.78 ? 1 : rel >= 0.65 ? 2 : 3; if (chance(0.15)) b = clamp(b + choix([-1, 1]), 0, 3); return choix(VENDEURS[b]); };
+const parmi = (liste, t) => { const dispo = liste.filter(x => x.tmin <= t); return melange(dispo).slice(0, 3); };
+
+function genererObjet(boutique, modele, t) {
+  const rel = rand(0.5, 0.99);
+  const base = BASE(t) * BOUTIQUES[boutique].prix;
+  const o = { id: Math.random().toString(36).slice(2, 10), boutique, nom: modele.nom, rel, vendeur: `${prenom()} ${nomFamille()}`, avis: avisVendeur(rel) };
+  if (boutique === "vehicule") {
+    const v = k => clamp(modele[k] + rand(-0.08, 0.08), 0.03, 1);
+    Object.assign(o, { vitesse: v("vitesse"), discretion: v("discretion"), coffre: v("coffre"), places: modele.places,
+      details: `${choix(COULEURS)}, ${modele.nom === "Hélicoptère" ? "avec pilote d'occasion" : "année " + randInt(1998, 2023)}`, q: (modele.vitesse + modele.discretion + modele.coffre) / 3 });
+    o.nom = modele.nom;
+  } else {
+    o.q = clamp(modele.q + rand(-0.08, 0.08), 0.05, 1);
+    if (boutique === "armes") o.violence = modele.violence;
+  }
+  const valeur = base * (0.35 + 1.4 * o.q) * (0.6 + 0.5 * rel);
+  Object.assign(o, loiDuPrix(valeur));
+  return o;
+}
+function genererInfos(cible) {
+  const utiles = Object.keys(INFOS).filter(k => !INFOS[k].attr || cible.niv[INFOS[k].attr] > 0);
+  return melange(utiles).slice(0, 3).map(k => {
+    const src = choix(SOURCES), sexe = sexeAuHasard();
+    const rel = rand(...src.rel);
+    const { prix, facteur } = loiDuPrix(BASE(cible.t) * BOUTIQUES.infos.prix * (0.4 + 1.2 * rel));
+    return { id: Math.random().toString(36).slice(2, 10), boutique: "infos", info: k, nom: INFOS[k].nom, source: accord(src.txt, sexe), rel, prix, facteur };
+  });
+}
+
+/* ===== PRÉPARATION =====
+   Les étapes dépendent de la cible : pas de perceur pour une buvette sans coffre, un chef d'équipe à partir du niveau 3… */
+function construireEtapes(cible) {
+  const n = cible.niv, t = cible.t, etapes = [];
+  const role = r => etapes.push({ type: "role", cle: r, offres: [0, 1, 2].map(() => genererRecrue(r, t)), choix: null });
+  const boutique = (b, offres) => etapes.push({ type: "boutique", cle: b, offres, choix: null, multi: [] });
+  if (t >= 3) role("chef");
+  role("chauffeur");
+  role("grosbras");
+  if (n.alarme > 0 || n.cameras > 1) role("pirate");
+  if (n.coffre > 0) role("perceur");
+  if (t >= 2) role("logisticien");
+  if (t >= 2) role("guetteur");
+  boutique("vehicule", parmi(VEHICULES, t).map(m => genererObjet("vehicule", m, t)));
+  boutique("armes", parmi(ARMES, t).map(m => genererObjet("armes", m, t)));
+  if (n.coffre > 0) boutique("ouverture", parmi(OUVERTURE, t).map(m => genererObjet("ouverture", m, t)));
+  if (n.alarme > 0 || n.cameras > 0) boutique("piratage", parmi(PIRATAGE, t).map(m => genererObjet("piratage", m, t)));
+  boutique("infos", genererInfos(cible));
+  return etapes;
+}
+const coutEtape = e => e.type === "boutique" && BOUTIQUES[e.cle].multi ? e.multi.reduce((s, i) => s + e.offres[i].prix, 0) : (e.choix >= 0 && e.choix !== null ? e.offres[e.choix].prix : 0);
+const depenses = (etapes, sauf = -1) => etapes.reduce((s, e, i) => s + (i === sauf ? 0 : coutEtape(e)), 0);
+const etapeFaite = e => e.choix !== null;
+function equipeDe(etapes) {
+  const eq = {}, obj = {}, infos = [];
+  for (const e of etapes) {
+    if (e.type === "role" && e.choix >= 0 && e.choix !== null) eq[e.cle] = e.offres[e.choix];
+    if (e.type === "boutique" && e.cle !== "infos" && e.choix >= 0 && e.choix !== null) obj[e.cle] = e.offres[e.choix];
+    if (e.cle === "infos") for (const i of e.multi) infos.push(e.offres[i]);
+  }
+  return { eq, obj, infos };
+}
+function avertissements(cible, etapes) {
+  const { eq, obj } = equipeDe(etapes), n = cible.niv, w = [], nb = Object.keys(eq).length;
+  if (!nb) w.push("Personne dans l'équipe ! Il faut au moins une recrue.");
+  if (!eq.chauffeur) w.push("Personne au volant : la fuite risque d'être laborieuse.");
+  if (!obj.vehicule) w.push("Pas de véhicule : tout le monde fuira à pied.");
+  else if (obj.vehicule.places < nb) w.push(`Il manque ${nb - obj.vehicule.places} place${nb - obj.vehicule.places > 1 ? "s" : ""} dans le véhicule : ${nb - obj.vehicule.places > 1 ? "certains fuiront" : "quelqu'un fuira"} à pied.`);
+  if (n.coffre > 0 && !eq.perceur) w.push("Personne pour ouvrir le coffre.");
+  if (eq.perceur && !obj.ouverture && n.coffre > 0) w.push("Ton perceur n'a pas de matériel.");
+  if (n.alarme > 0 && !eq.pirate) w.push("Personne pour couper l'alarme.");
+  if (eq.pirate && !obj.piratage) w.push("Ton pirate n'a pas de kit de piratage.");
+  if (n.gardes >= 2 && !eq.grosbras) w.push("Personne pour s'occuper des vigiles.");
+  return w;
+}
+
+/* ===== LE BRAQUAGE =====
+   Tout se joue étape par étape : approche, entrée, alarme, coffre, butin, fuite, puis le partage.
+   Chaque étape oppose le niveau réel des recrues (+ matériel, + infos) à la difficulté du lieu, avec une part de chance.
+   Les traits cachés (bavard, gâchette facile, endetté…) peuvent tout changer. */
+function simuler(cible, etapes, argentAvant) {
+  const { eq, obj: obj0, infos } = equipeDe(etapes);
+  const membres = Object.keys(ROLES).filter(r => eq[r]).map(r => ({ role: r, r: eq[r], statut: "libre", blesse: false }));
+  const log = [];
+  let t = 0, alerte = 0, tPolice = null, violence = false, surpris = false, fuiteAnticipee = false;
+  const L = { ...cible.niv }, delta = { cameras: 0, gardes: 0, alarme: 0, coffre: 0 };
+  let niveauPolice = L.police, minutesPolice = cible.minutesPolice;
+  const arrivee = () => tPolice === null ? Infinity : tPolice + minutesPolice;
+  const etat = () => tPolice === null ? 0 : t >= arrivee() ? 2 : 1;
+  const dire = (txt, type = "neutre") => log.push({ txt, type, t: Math.round(t), alerte: clamp(alerte), police: etat(), arrivee: tPolice === null ? null : Math.round(arrivee()) });
+  const phase = txt => dire(txt, "phase");
+  const a = (role, defaut) => eq[role] ? eq[role].court : defaut;
+  const aLeTrait = (r, id) => r && r.traits.includes(id);
+  const quelquun = id => membres.find(m => aLeTrait(m.r, id));
+  const chef = eq.chef ? eq.chef.s : 0;
+  function eff(role) {
+    const r = eq[role]; if (!r) return 0;
+    let e = r.s;
+    if (aLeTrait(r, "methodique")) e += 0.04;
+    if (alerte >= 0.4 && aLeTrait(r, "sangfroid")) e += 0.08;
+    if (alerte >= 0.4 && aLeTrait(r, "nerveux")) e -= 0.15;
+    if (role !== "chef") e += 0.12 * chef;
+    return clamp(e, 0.01, 1);
+  }
+  const eLog = eff("logisticien");
+  // le matériel peut lâcher (le logisticien réduit le risque)
+  const obj = {};
+  for (const [k, o] of Object.entries(obj0)) { const relAjustee = 1 - (1 - o.rel) * (1.3 - 0.9 * eLog); obj[k] = { ...o, panne: !chance(relAjustee) }; }
+  const qualite = o => o ? clamp(o.q * (0.8 + 0.35 * eLog) * (o.panne ? 0.25 : 1)) : 0;
+  // les informations : vraies ou fausses
+  let bonusButin = 0, bonusFuite = 0;
+  const infosFausses = [];
+  for (const i of infos) {
+    const vraie = chance(i.rel); i.vraie = vraie;
+    const def = INFOS[i.info];
+    if (def.attr) delta[def.attr] += vraie ? -rand(1.5, 2.5) : rand(0.5, 1);
+    if (i.info === "butin") bonusButin += vraie ? 0.25 : -0.1;
+    if (i.info === "police") bonusFuite += vraie ? 0.2 : -0.1;
+    if (!vraie) infosFausses.push(i);
+  }
+  const diff = k => clamp((L[k] + delta[k]) / 5) * 0.7;
+  // une épreuve : ce qu'on apporte (compétence + matériel) contre la difficulté, avec une part de chance
+  const epreuve = (attaque, defense) => clamp(0.5 + (attaque - defense) * PENTE, 0.04, 0.97);
+  const vehicule = obj.vehicule || null;
+
+  phase("La veille");
+  dire(`${membres.length} personne${membres.length > 1 ? "s" : ""} dans l'équipe. Cible : ${cible.nom}, ${cible.lieu}.`, "info");
+  for (const m of membres) if (aLeTrait(m.r, "bavard") && chance(0.3)) {
+    niveauPolice = Math.min(5, niveauPolice + 1); minutesPolice = Math.max(2, Math.round(minutesPolice * 0.7));
+    dire(`${m.r.court} a trop parlé au bar la semaine dernière : la police a renforcé ses patrouilles dans le coin.`, "mauvais"); break;
+  }
+  if (eq.logisticien) dire(eLog > 0.6 ? `${eq.logisticien.court} a tout vérifié deux fois. Le matériel est prêt.` : eLog > 0.3 ? `${eq.logisticien.court} a préparé le matériel. À peu près.` : `${eq.logisticien.court} a « préparé » le matériel. On espère que ça ira.`, eLog > 0.6 ? "bon" : "neutre");
+  if (chef) dire(eff("chef") > 0.6 ? `${eq.chef.court} répète le plan une dernière fois. Tout le monde sait quoi faire.` : `${eq.chef.court} explique le plan. Certains ont l'air de ne pas avoir tout compris.`, eff("chef") > 0.6 ? "bon" : "neutre");
+
+  // ---- Approche
+  phase("L'approche");
+  if (!vehicule) dire("Pas de véhicule : l'équipe arrive à pied, sacs vides sur le dos.", "mauvais");
+  else dire(`L'équipe arrive en ${vehicule.nom.toLowerCase()} ${vehicule.details.split(",")[0]}.`, "neutre");
+  if (L.cameras > 0) {
+    let coupees = false;
+    if (eq.pirate || obj.piratage) {
+      if (obj.piratage && obj.piratage.panne) dire(`Le ${obj.piratage.nom.toLowerCase()} plante au pire moment.`, "mauvais");
+      const ctrl = eq.pirate ? 0.6 * eff("pirate") + 0.4 * qualite(obj.piratage) : 0.15 * qualite(obj.piratage);
+      coupees = chance(epreuve(ctrl, diff("cameras")));
+      dire(coupees ? `${a("pirate", "Quelqu'un")} met les caméras en boucle.` : `${a("pirate", "L'équipe")} n'arrive pas à couper les caméras.`, coupees ? "bon" : "mauvais");
+    }
+    const fausse = infosFausses.find(i => i.info === "cameras");
+    if (fausse) dire("Le plan des caméras était faux : il y en a une de plus, juste au-dessus de la porte.", "mauvais");
+    const discret = membres.some(m => aLeTrait(m.r, "discret")) ? 0.8 : 1;
+    const pRepere = coupees ? 0.04 : diff("cameras") * (1 - 0.4 * (vehicule ? vehicule.discretion : 0.3)) * (1 - 0.3 * chef) * discret;
+    if (chance(pRepere)) { alerte += 0.3; dire("Une caméra filme l'équipe qui se gare. Quelque part, quelqu'un regarde l'écran…", "mauvais"); }
+    else dire("Personne ne remarque l'équipe.", "bon");
+  } else dire("Aucune caméra en vue. L'équipe se gare tranquillement.", "bon");
+  t += 1;
+
+  // ---- Entrée
+  phase("L'entrée");
+  const armes = obj.armes || null;
+  const gachette = quelquun("gachette");
+  if (L.gardes > 0) {
+    if (infosFausses.find(i => i.info === "gardes")) dire("Les horaires des vigiles étaient faux : il y a du monde en plus.", "mauvais");
+    if (armes && armes.panne) dire(`Les ${armes.nom.toLowerCase()} posent problème : ${armes.nom.startsWith("Répliques") ? "l'une d'elles a perdu son canon en plastique" : "une arme s'enraye dès le début"}.`, "mauvais");
+    const attaque = 0.6 * eff("grosbras") + 0.4 * qualite(armes) + 0.1 * chef;
+    const ok = chance(epreuve(attaque, diff("gardes")));
+    if (ok) dire(`${a("grosbras", "L'équipe")} maîtrise ${["", "le patron", "le vigile", "les deux vigiles", "l'équipe de sécurité", "les gardes d'élite"][L.gardes]} sans un bruit.`, "bon");
+    else {
+      alerte += 0.4;
+      dire(`${a("grosbras", "L'équipe")} n'arrive pas à maîtriser tout le monde. Quelqu'un hurle.`, "mauvais");
+      if (armes && chance(armes.violence * 0.6 + (gachette ? 0.3 : 0))) {
+        violence = true; alerte = 1;
+        const blesse = chance(0.45) ? choix(membres) : null;
+        if (blesse) blesse.blesse = true;
+        dire(`Coups de feu !${blesse ? ` ${blesse.r.court} est touché${blesse.r.sexe === "f" ? "e" : ""} à la jambe.` : " Un garde est blessé."} Ça vient de devenir très sérieux.`, "mauvais");
+      }
+    }
+  } else dire(L.coffre === 0 && L.alarme === 0 ? "Personne pour résister. Ça va être rapide." : "Personne pour surveiller. L'équipe entre sans difficulté.", "bon");
+  if (!violence && gachette && armes && chance(0.25)) {
+    violence = true; alerte += 0.4;
+    dire(`${gachette.r.court} tire en l'air « pour se faire respecter ». Bravo.`, "mauvais");
+  }
+  t += 2;
+
+  // ---- Alarme
+  if (L.alarme > 0) {
+    let attaque = eq.pirate ? 0.6 * eff("pirate") + 0.4 * qualite(obj.piratage) : 0.15 * qualite(obj.piratage);
+    const code = infos.find(i => i.info === "alarme");
+    let p = epreuve(attaque, diff("alarme"));
+    if (code && code.vraie) p = clamp(p + 0.25, 0, 0.98);
+    if (code && !code.vraie) dire("Le code de l'alarme acheté… ne marche pas.", "mauvais");
+    if (chance(p)) dire(code && code.vraie ? "Le code de l'alarme fonctionne. Silence total." : `${a("pirate", "Par miracle, l'équipe")} neutralise l'alarme.`, "bon");
+    else { tPolice = t; alerte = Math.max(alerte, 0.7); dire("L'alarme se déclenche ! La police est prévenue.", "mauvais"); }
+  }
+  if (tPolice === null && alerte >= 0.6 && chance(alerte)) {
+    tPolice = t;
+    dire(L.alarme > 0 ? "Un employé a eu le temps d'appuyer sur le bouton d'alerte." : "Un client s'est enfui et appelle la police avec son portable.", "mauvais");
+  }
+  if (tPolice !== null) dire(`${cible.gendarmerie ? "Gendarmes" : "Police"} attendus dans environ ${minutesPolice} min.`, "info");
+  t += 1;
+
+  // la police arrive-t-elle pendant qu'on est encore à l'intérieur ?
+  const avance = eq.guetteur ? 1 + 3 * eff("guetteur") : 0;
+  function policeArrive(duree) {
+    if (arrivee() >= t + duree) return false;
+    if (eq.guetteur && chance(0.3 + 0.6 * eff("guetteur"))) {
+      dire(`${eq.guetteur.court} à la radio : « Les flics arrivent ! On dégage, MAINTENANT ! »`, "mauvais");
+      t = Math.max(t, arrivee() - avance); fuiteAnticipee = true;
+    } else {
+      t = Math.max(t, arrivee());
+      dire(eq.guetteur ? `${eq.guetteur.court} n'a rien vu venir. Les sirènes ! La police est déjà là !` : "Les sirènes ! La police est déjà devant la porte !", "mauvais");
+      surpris = true;
+    }
+    return true;
+  }
+
+  // ---- Coffre
+  let coffreOuvert = L.coffre === 0;
+  if (L.coffre > 0) {
+    phase("Le coffre");
+    const ouv = obj.ouverture || null;
+    if (infosFausses.find(i => i.info === "coffre")) dire("Le modèle du coffre ne correspond pas du tout à ce qu'on t'a vendu.", "mauvais");
+    if (ouv && ouv.panne) dire(`${ouv.nom} rend l'âme au bout de deux minutes.`, "mauvais");
+    if (!eq.perceur) dire(ouv ? "Personne ne sait vraiment se servir du matériel. On tente quand même." : "Personne pour ouvrir le coffre, et rien pour le forcer. On tape dessus.", "mauvais");
+    else if (!ouv) dire(`${eq.perceur.court} n'a que ses mains et un tournevis.`, "mauvais");
+    const attaque = eq.perceur ? 0.55 * eff("perceur") + 0.45 * qualite(ouv) : 0.25 * qualite(ouv);
+    const reussi = chance(epreuve(attaque, diff("coffre")));
+    const duree = (2 + 2.5 * L.coffre) * (1.5 - 0.8 * attaque) * rand(0.85, 1.15);
+    if (policeArrive(duree)) coffreOuvert = reussi && !fuiteAnticipee && chance(0.3);
+    else {
+      t += duree; coffreOuvert = reussi;
+      dire(reussi ? `${a("perceur", "L'équipe")} ouvre ${["", "le petit coffre-fort", "le coffre-fort", "la salle des coffres", "la chambre forte", "la chambre forte"][L.coffre]} en ${Math.round(duree)} min.` : `Au bout de ${Math.round(duree)} min, ${a("perceur", "l'équipe")} abandonne : le coffre résiste.`, reussi ? "bon" : "mauvais");
+    }
+  }
+
+  // ---- Butin
+  phase("Le butin");
+  let frac;
+  if (surpris) frac = coffreOuvert ? rand(0.15, 0.35) : rand(0.02, 0.08);
+  else if (fuiteAnticipee) frac = coffreOuvert ? rand(0.2, 0.45) : rand(0.03, 0.1);
+  else {
+    if (infos.find(i => i.info === "butin")) dire(bonusButin > 0 ? "L'informateur avait raison : l'argent est exactement là où il l'a dit." : "Le magot n'est pas là où l'informateur l'a dit. On cherche…", bonusButin > 0 ? "bon" : "mauvais");
+    frac = coffreOuvert ? clamp(0.65 + bonusButin + 0.12 * chef + rand(-0.12, 0.12), 0.05, 1) : (L.coffre > 0 ? rand(0.05, 0.14) : clamp(0.6 + bonusButin + 0.1 * chef + rand(-0.15, 0.15), 0.05, 1));
+    if (L.coffre > 0 && !coffreOuvert) dire("Sans le coffre, il ne reste que la caisse et ce qui traîne.", "mauvais");
+    const duree = 2 + 3 * frac * (1 - 0.3 * chef);
+    if (policeArrive(duree)) frac *= surpris ? 0.4 : 0.6;
+    else t += duree;
+  }
+  const capacite = vehicule ? 0.3 + 0.75 * vehicule.coffre : 0.2;
+  if (frac > capacite) { frac = capacite; dire(vehicule ? "Le coffre de la voiture est plein : on abandonne une partie du butin." : "À pied, on ne peut pas tout porter. On laisse une partie du butin.", "mauvais"); }
+  const butinEmporte = cible.butin * frac;
+  dire(`Butin dans les sacs : environ ${euros(butinEmporte)}.`, "info");
+
+  // ---- Fuite
+  phase("La fuite");
+  const policeAlertee = tPolice !== null;
+  const policeSurPlace = policeAlertee && t >= arrivee();
+  const ordre = ["chauffeur", "chef", "perceur", "pirate", "grosbras", "logisticien", "guetteur"];
+  const tries = membres.slice().sort((x, y) => ordre.indexOf(x.role) - ordre.indexOf(y.role));
+  const places = vehicule ? vehicule.places : 0;
+  const voiture = tries.slice(0, places), aPied = tries.slice(places);
+  if (vehicule && aPied.length) dire(`Pas assez de places : ${aPied.map(m => m.r.court).join(", ")} ${aPied.length > 1 ? "partent" : "part"} à pied.`, "mauvais");
+  let voitureOk = false;
+  if (vehicule && voiture.length) {
+    if (vehicule.panne) dire(`${vehicule.nom} tousse, cale… et redémarre enfin. De précieuses secondes perdues.`, "mauvais");
+    if (!eq.chauffeur) dire(`${voiture[0].r.court} prend le volant, sans grande conviction.`, "mauvais");
+    const conduite = eq.chauffeur ? eff("chauffeur") : 0.1;
+    const vitesse = vehicule.vitesse * (vehicule.panne ? 0.25 : 1);
+    if (infos.find(i => i.info === "police")) dire(bonusFuite > 0 ? "L'itinéraire de fuite acheté est parfait : pas une patrouille." : "L'itinéraire de fuite mène droit vers un chantier. Demi-tour !", bonusFuite > 0 ? "bon" : "mauvais");
+    let p;
+    if (!policeAlertee) p = clamp(0.82 + 0.15 * conduite + bonusFuite * 0.3 - (vehicule.panne ? 0.25 : 0), 0.05, 0.99);
+    else {
+      const attaque = 0.55 * conduite + 0.35 * vitesse + 0.1 * eff("guetteur") + bonusFuite;
+      const defense = niveauPolice / 5 * 0.6 + (policeSurPlace ? 0.25 : 0) + (violence ? 0.15 : 0) + (surpris ? 0.15 : 0);
+      p = epreuve(attaque, defense);
+    }
+    voitureOk = chance(p);
+    if (voitureOk) {
+      dire(policeAlertee ? `${a("chauffeur", voiture[0].r.court)} sème la police dans les petites rues. Personne ne suit.` : `Fuite tranquille. ${a("chauffeur", voiture[0].r.court)} respecte même les limitations de vitesse.`, "bon");
+    } else {
+      dire(policeAlertee ? "Barrage de police au bout de la rue ! La voiture est coincée." : `${a("chauffeur", voiture[0].r.court)} grille un feu rouge… devant une voiture de police.`, "mauvais");
+      for (const m of voiture) {
+        const pPris = 0.72 - (aLeTrait(m.r, "sangfroid") ? 0.15 : 0) + (m.blesse ? 0.2 : 0);
+        if (chance(pPris)) { m.statut = "arrete"; dire(`${m.r.court} est arrêté${m.r.sexe === "f" ? "e" : ""}.`, "mauvais"); }
+        else { m.aPied = true; dire(`${m.r.court} saute de la voiture et s'enfuit à pied${chance(0.6) ? " avec un sac" : ""}.`, "bon"); }
+      }
+    }
+  }
+  for (const m of aPied) {
+    const p = (policeAlertee ? 0.3 + 0.35 * m.r.s : 0.88) * (m.blesse ? 0.6 : 1);
+    if (chance(p)) dire(`${m.r.court} disparaît dans la nature, à pied.`, "bon");
+    else { m.statut = "arrete"; dire(`${m.r.court} se fait rattraper, à pied, trois rues plus loin.`, "mauvais"); }
+  }
+  // l'argent ramené : la voiture garde les sacs ; sinon, chacun repart avec ce qu'il porte
+  let recupere;
+  if (vehicule && voiture.length) {
+    if (voitureOk) recupere = butinEmporte;
+    else { const fuyards = voiture.filter(m => m.statut === "libre").length; recupere = butinEmporte * fuyards / voiture.length * 0.5; }
+  } else { const libres = membres.filter(m => m.statut === "libre").length; recupere = butinEmporte * libres / Math.max(1, membres.length); }
+
+  // ---- Le partage
+  phase("Le partage");
+  const trahisons = [];
+  for (const m of membres) {
+    if (m.statut !== "libre" || recupere <= 0) continue;
+    const p = aLeTrait(m.r, "loyal") ? 0 : aLeTrait(m.r, "endette") ? 0.4 : 0.03;
+    if (chance(p)) {
+      const part = recupere * rand(0.3, 0.6) / Math.max(1, membres.filter(x => x.statut === "libre").length) * 1.5;
+      recupere -= part; m.statut = "disparu"; m.vol = part; trahisons.push(m);
+      dire(`${m.r.court} disparaît avec ${euros(part)}. Plus de nouvelles, numéro coupé.`, "mauvais");
+    }
+  }
+  const recel = recupere * cible.recel;
+  if (recel > 0) dire(`Le receleur prend sa part pour écouler la marchandise : ${euros(recel)}.`, "info");
+  const gain = Math.max(0, recupere - recel);
+  const cout = depenses(etapes);
+  // garde à vue : les arrêtés parlent-ils ?
+  let saisie = 0, balance = null;
+  for (const m of membres.filter(m => m.statut === "arrete")) {
+    const p = 0.12 + (aLeTrait(m.r, "bavard") ? 0.4 : 0) - (aLeTrait(m.r, "loyal") ? 0.12 : 0) - (aLeTrait(m.r, "sangfroid") ? 0.05 : 0) + (violence ? 0.1 : 0);
+    if (chance(p)) { balance = m; break; }
+  }
+  const argentApres = argentAvant - cout + gain;
+  if (balance) {
+    saisie = Math.round(argentApres * 0.3);
+    dire(`${balance.r.court} a craqué en garde à vue et a donné ton nom. Saisie sur tes comptes : ${euros(saisie)}.`, "mauvais");
+  } else if (membres.some(m => m.statut === "arrete")) dire("Les arrêtés n'ont rien dit. Pour l'instant.", "neutre");
+  if (gain > 0) dire(`Argent ramené : ${euros(gain)}.`, gain >= cout ? "bon" : "info");
+  else dire("Personne n'a rien ramené.", "mauvais");
+
+  // ---- Verdict
+  const nbArretes = membres.filter(m => m.statut === "arrete").length;
+  let issue;
+  if (gain <= 0 && nbArretes === membres.length) issue = { titre: "Fiasco total", c: "rouge", txt: "Toute l'équipe dort au poste ce soir. Et tu as tout perdu." };
+  else if (gain <= 0) issue = { titre: "Échec", c: "rouge", txt: nbArretes ? "Des arrestations, et pas un euro de ramené." : "Tout le monde s'en sort… mais les mains vides." };
+  else if (nbArretes > 0 && gain < cout) issue = { titre: "Fiasco… presque", c: "rouge", txt: "C'est raté, mais quelqu'un a réussi à s'enfuir avec un peu d'argent." };
+  else if (nbArretes > 0) issue = { titre: "Réussite, avec de la casse", c: "or", txt: "L'argent est là, mais certains ne reviendront pas avant un moment." };
+  else if (gain < cout) issue = { titre: "Réussite… pour des miettes", c: "or", txt: "Personne n'est arrêté, mais le butin ne couvre même pas les frais." };
+  else if (gain >= cout * 2.5 && !trahisons.length) issue = { titre: "Coup parfait", c: "vert", txt: "Tout le monde est libre, et les sacs sont pleins. On en parlera longtemps dans le milieu." };
+  else issue = { titre: "Réussite", c: "vert", txt: "Le coup est rentable, et toute l'équipe est libre." };
+  const reussi = gain >= cout;
+
+  return {
+    log, issue, reussi, cout, gain, saisie, recel, butinEmporte, recupereAvantRecel: recupere + 0, argentAvant, argentApres: argentApres - saisie,
+    membres: membres.map(m => ({ role: m.role, id: m.r.id, statut: m.statut, blesse: m.blesse, vol: m.vol || 0 })),
+    objets: Object.values(obj).map(o => ({ boutique: o.boutique, nom: o.nom, panne: o.panne, facteur: o.facteur, rel: o.rel })),
+    infos: infos.map(i => ({ nom: i.nom, vraie: i.vraie, source: i.source, facteur: i.facteur })),
+    trahi: trahisons.length > 0, violence,
+  };
+}
+
+/* ===== SAUVEGARDE (dans ce navigateur) ===== */
+const CLE = "braquage-partie-v1";
+let S = null; // l'état de la partie
+function sauver() { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) {} }
+function charger() { try { const x = JSON.parse(localStorage.getItem(CLE)); return x && x.argent !== undefined ? x : null; } catch (e) { return null; } }
+function nouvellePartie() {
+  S = { argent: ARGENT_DEPART, niveau: 1, coup: 1, ecran: "cibles", cibles: proposerCibles(1), preps: {}, cibleId: null, etape: 0, resultat: null,
+    stats: { coups: 0, reussis: 0, meilleur: 0, totalGagne: 0, niveauMax: 1 }, legende: false };
+  sauver();
+}
+
+/* ===== INTERFACE ===== */
+const app = document.getElementById("app");
+const $ = id => document.getElementById(id);
+let minuteurLog = null;
+const cibleCourante = () => S && S.cibles.find(c => c.id === S.cibleId);
+const etapesCourantes = () => S.preps[S.cibleId];
+
+function majBarre() {
+  const b = $("barre");
+  if (!S || S.ecran === "accueil") { b.hidden = true; return; }
+  b.hidden = false;
+  let argent = S.argent;
+  if (S.ecran === "prep") argent = S.argent - depenses(etapesCourantes());
+  if (S.ecran === "braquage" && S.resultat) argent = S.resultat.argentAvant - S.resultat.cout;
+  $("hArgent").textContent = euros(argent);
+  $("hNiveau").innerHTML = `Coup ${S.coup} · <span title="Niveau de réputation">★${Math.min(S.niveau, NIVEAU_MAX)}</span>`;
+}
+function afficher() {
+  clearTimeout(minuteurLog);
+  if (!S) S = { ecran: "accueil" };
+  ({ accueil: ecranAccueil, cibles: ecranCibles, prep: ecranPrep, braquage: ecranBraquage, bilan: ecranBilan, fin: ecranFin })[S.ecran]();
+  majBarre();
+  dessinerAvatars();
+}
+function aller(ecran) { S.ecran = ecran; sauver(); afficher(); scrollTo(0, 0); }
+
+// --- accueil
+function ecranAccueil() {
+  const sauvegarde = charger();
+  app.innerHTML = `
+  <section class="accueil">
+    <h1 class="titre">Braquage</h1>
+    <p class="sous">Recrute ton équipe, achète ton matériel, gère ton budget.<br>Et prie pour que personne ne parle.</p>
+    ${sauvegarde && sauvegarde.ecran !== "fin" ? `<button class="btn" data-a="continuer">Continuer · coup n°${sauvegarde.coup} · ${euros(sauvegarde.argent)}</button>` : ""}
+    <button class="btn ${sauvegarde && sauvegarde.ecran !== "fin" ? "secondaire" : ""}" data-a="nouvelle">Nouvelle partie</button>
+    <details class="carte regles">
+      <summary><b>Comment jouer</b></summary>
+      <p>💰 Tu commences avec ${euros(ARGENT_DEPART)}. Choisis une cible : une petite boutique de village pour commencer, une banque ou une réserve d'or plus tard.</p>
+      <p>👥 Pour chaque poste, plusieurs candidats se présentent. Lis bien leur dossier : leur passé, leur réputation, les rumeurs. <b>Leur vrai niveau est caché.</b> Leur prix est ferme, et il suit généralement leur niveau… mais pas toujours : il y a des bonnes affaires et des arnaques.</p>
+      <p>🚙 Ensuite, le matériel : véhicule, armes, outils, piratage, informations. La fiabilité ne se voit pas : fie-toi au vendeur.</p>
+      <p>🎬 Le braquage se joue tout seul, selon tes choix et un peu de chance. Il peut réussir, rater, ou finir entre les deux.</p>
+      <p>📈 Avec l'argent gagné (et celui que tu as gardé), tu montes des coups de plus en plus gros. Si tu n'as plus de quoi payer une équipe, c'est fini.</p>
+    </details>
+  </section>`;
+}
+
+// --- choix de la cible
+function ecranCibles() {
+  const libelle = t => t < S.niveau ? "Coup sûr" : t > S.niveau ? "Gros coup" : "À ta mesure";
+  app.innerHTML = `
+  <h2 class="titre" style="font-size:1.7rem; margin-top:10px">Choisis ta cible</h2>
+  <p class="muet" style="margin:2px 0 0">Ton budget : <b style="color:var(--vert)">${euros(S.argent)}</b>. Plus la cible est grosse, plus l'équipe et le matériel coûtent cher.</p>
+  ${S.legende ? `<div class="carte" style="border-color:var(--or)">🏆 <b>Tu es une légende du milieu.</b> Tu peux continuer à braquer les plus grosses cibles du pays.</div>` : ""}
+  ${S.cibles.map((c, i) => `
+  <article class="carte cible ${c.t > S.niveau ? "gros" : ""}">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px">
+      ${etoiles(c.t, NIVEAU_MAX)}
+      <span class="badge ${c.t > S.niveau ? "or" : ""}">${libelle(c.t)}</span>
+    </div>
+    <h3>${c.nom}</h3>
+    <div class="lieu">${c.type} · ${c.lieu}</div>
+    <div class="butin"><span>Butin estimé</span><b>${euros(c.butinMin)} – ${euros(c.butinMax)}</b></div>
+    ${c.recel ? `<div class="petit muet">💎 Marchandise à écouler : le receleur prendra environ ${Math.round(c.recel * 100)} %.</div>` : ""}
+    <div class="secu">
+      ${Object.keys(SECU).map(k => `<span>${SECU[k].icone}</span><span>${SECU[k].txt[c.niv[k]]}</span>`).join("")}
+      <span>🚓</span><span>${c.gendarmerie ? "Gendarmerie" : "Police"} à environ ${c.minutesPolice} min</span>
+    </div>
+    <div class="ambiance">« ${c.ambiance} »</div>
+    <button class="btn" data-a="cible" data-i="${i}">Préparer ce coup</button>
+  </article>`).join("")}`;
+}
+
+// --- préparation
+function ecranPrep() {
+  const c = cibleCourante(), etapes = etapesCourantes();
+  const i = S.etape, recap = i >= etapes.length;
+  const reste = S.argent - depenses(etapes);
+  const points = etapes.map((e, k) => {
+    const ic = e.type === "role" ? ROLES[e.cle].icone : BOUTIQUES[e.cle].icone;
+    const passe = e.choix === -1 || (e.cle === "infos" && e.choix !== null && !e.multi.length);
+    return `<button class="${etapeFaite(e) ? "fait" : ""} ${passe ? "passe" : ""} ${k === i ? "actif" : ""}" data-a="etape" data-i="${k}" aria-label="${e.type === "role" ? ROLES[e.cle].nom : BOUTIQUES[e.cle].nom}">${ic}</button>`;
+  }).join("") + `<button class="${i === etapes.length ? "actif" : ""}" data-a="etape" data-i="${etapes.length}" aria-label="Récapitulatif" ${etapes.every(etapeFaite) ? "" : "disabled style='opacity:.35'"}>📋</button>`;
+  let corps;
+  if (recap) corps = vueRecap(c, etapes);
+  else {
+    const e = etapes[i], dispo = S.argent - depenses(etapes, i);
+    const def = e.type === "role" ? ROLES[e.cle] : BOUTIQUES[e.cle];
+    const cartes = e.offres.map((o, k) => {
+      const choisie = e.cle === "infos" ? e.multi.includes(k) : e.choix === k;
+      const dispoIci = e.cle === "infos" ? dispo - e.multi.filter(x => x !== k).reduce((s, x) => s + e.offres[x].prix, 0) : dispo;
+      const abordable = o.prix <= dispoIci;
+      return e.type === "role" ? carteRecrue(o, k, choisie, abordable) : carteObjet(e, o, k, choisie, abordable);
+    }).join("");
+    corps = `
+      <h2 class="titre etape-titre">${def.icone} ${def.nom}</h2>
+      <p class="etape-desc">${def.desc}</p>
+      ${cartes}
+      ${e.cle === "infos"
+        ? `<button class="btn" data-a="suivant">${e.multi.length ? `Continuer avec ${e.multi.length} info${e.multi.length > 1 ? "s" : ""}` : "Continuer sans rien acheter"}</button>`
+        : `<button class="btn secondaire" data-a="passer">${e.type === "role" ? `Se passer de ${def.nom.toLowerCase()}` : def.sans}${e.choix === -1 ? " ✓" : ""}</button>`}`;
+  }
+  app.innerHTML = `
+    <div class="resume-cible" style="margin-top:8px"><span>${etoiles(c.t, NIVEAU_MAX)} <b>${c.nom}</b> · ${c.lieu}</span><button class="badge" data-a="retourCibles">Changer</button></div>
+    <div class="budget"><span>Budget restant</span><span class="prix">${euros(reste)}</span></div>
+    <nav class="points">${points}</nav>
+    ${corps}`;
+}
+function carteRecrue(r, k, choisie, abordable) {
+  const rumeurs = r.connus.map(id => TRAITS[id].rumeur);
+  return `
+  <article class="carte offre ${choisie ? "choisie" : ""}">
+    <div class="tete">
+      <canvas width="128" height="128" data-avatar="${r.graine}" data-sexe="${r.sexe}" data-age="${r.age}"></canvas>
+      <div>
+        <div class="nom">${nomComplet(r)}</div>
+        <div class="infos">${r.age} ans · ${r.ville}</div>
+        <div class="infos">${r.fond}</div>
+      </div>
+    </div>
+    <div class="papier dossier">
+      <p><b>Réputation :</b> ${r.reputation}</p>
+      <div class="sec">Antécédents</div>
+      ${r.coups.length ? `<ul>${r.coups.map(x => `<li>${x.annee} — ${x.txt}</li>`).join("")}</ul>` : `<p>N'a jamais participé à un braquage.</p>`}
+      <p>${r.condamnations ? `Casier : ${r.condamnations} condamnation${r.condamnations > 1 ? "s" : ""} (${r.prison} an${r.prison > 1 ? "s" : ""} de prison au total)` : "Casier judiciaire vierge"}</p>
+      ${rumeurs.length ? `<div class="sec">On dit que…</div><ul>${rumeurs.map(x => `<li>${x}</li>`).join("")}</ul>` : ""}
+    </div>
+    <div class="pied">
+      <div><div class="petit muet">Prix ferme</div><div class="prix ${abordable ? "" : "trop-cher"}">${euros(r.prix)}</div></div>
+      <button class="btn" data-a="choisir" data-i="${k}" ${abordable || choisie ? "" : "disabled"}>${choisie ? "Engagé ✓" : abordable ? "Engager" : "Trop cher"}</button>
+    </div>
+  </article>`;
+}
+function carteObjet(e, o, k, choisie, abordable) {
+  let stats = "", titre = o.nom, sous = "";
+  if (e.cle === "vehicule") {
+    sous = `${o.details} · <b>${o.places} places</b>`;
+    stats = `<div class="stat"><span>Vitesse</span>${jauge(o.vitesse)}</div><div class="stat"><span>Discrétion</span>${jauge(o.discretion)}</div><div class="stat"><span>Coffre</span>${jauge(o.coffre)}</div>`;
+  } else if (e.cle === "armes") stats = `<div class="stat"><span>Intimidation</span>${jauge(o.q)}</div><div class="stat"><span>Risque de bavure</span>${jauge(o.violence, true)}</div>`;
+  else if (e.cle === "infos") { sous = INFOS[o.info].desc; titre = `${INFOS[o.info].icone} ${o.nom}`; }
+  else stats = `<div class="stat"><span>Efficacité</span>${jauge(o.q)}</div>`;
+  const icone = e.cle === "infos" ? "🕵️" : BOUTIQUES[e.cle].icone;
+  const multi = e.cle === "infos";
+  return `
+  <article class="carte offre ${choisie ? "choisie" : ""}">
+    <div class="tete"><div class="objet-icone">${icone}</div>
+      <div><div class="nom">${titre}</div><div class="infos">${sous}</div></div></div>
+    ${stats ? `<div style="margin-top:10px">${stats}</div>` : ""}
+    <div class="papier dossier">
+      ${multi ? `<p><b>Source :</b> ${o.source}</p>` : `<p><b>Vendeur :</b> ${o.vendeur}</p><p>${o.avis}</p>`}
+    </div>
+    <div class="pied">
+      <div><div class="petit muet">Prix ferme</div><div class="prix ${abordable ? "" : "trop-cher"}">${euros(o.prix)}</div></div>
+      <button class="btn" data-a="${multi ? "basculer" : "choisir"}" data-i="${k}" ${abordable || choisie ? "" : "disabled"}>${choisie ? (multi ? "Acheté ✓ (retirer)" : "Choisi ✓") : abordable ? "Acheter" : "Trop cher"}</button>
+    </div>
+  </article>`;
+}
+function vueRecap(c, etapes) {
+  const { eq, obj, infos } = equipeDe(etapes);
+  const w = avertissements(c, etapes);
+  const lignes = [];
+  for (const r of Object.keys(ROLES)) if (etapes.some(e => e.cle === r)) lignes.push([`${ROLES[r].icone} ${ROLES[r].nom}`, eq[r] ? `${nomComplet(eq[r])} · ${euros(eq[r].prix)}` : `<span class="muet">personne</span>`]);
+  for (const b of ["vehicule", "armes", "ouverture", "piratage"]) if (etapes.some(e => e.cle === b)) lignes.push([`${BOUTIQUES[b].icone} ${BOUTIQUES[b].nom}`, obj[b] ? `${obj[b].nom} · ${euros(obj[b].prix)}` : `<span class="muet">rien</span>`]);
+  lignes.push([`🗂️ Informations`, infos.length ? infos.map(i => i.nom).join(", ") + ` · ${euros(infos.reduce((s, i) => s + i.prix, 0))}` : `<span class="muet">aucune</span>`]);
+  const peut = Object.keys(eq).length > 0;
+  return `
+    <h2 class="titre etape-titre">📋 Le plan</h2>
+    <p class="etape-desc">Dernière vérification avant le grand soir. Tu peux encore revenir sur chaque étape (les icônes en haut).</p>
+    <div class="carte">${lignes.map(([a, b]) => `<div class="ligne-recap"><span>${a}</span><span style="text-align:right">${b}</span></div>`).join("")}
+      <div class="ligne-recap"><b>Total dépensé</b><b>${euros(depenses(etapes))}</b></div>
+    </div>
+    ${w.map(x => `<div class="alerte-recap">⚠️ ${x}</div>`).join("")}
+    <button class="btn" data-a="lancer" ${peut ? "" : "disabled"}>Lancer le braquage</button>`;
+}
+
+// --- braquage en direct
+function ecranBraquage() {
+  const c = cibleCourante(), R = S.resultat;
+  app.innerHTML = `
+    <h2 class="titre" style="font-size:1.6rem; margin-top:10px">${c.nom}</h2>
+    <div class="muet">${c.lieu} · le grand soir</div>
+    <div class="direct" id="direct"><span class="temps" id="dTemps">0 min</span><span class="etat" id="dEtat">Tout est calme.</span></div>
+    <ul class="log" id="log"></ul>
+    <button class="btn secondaire" id="toutVoir" data-a="toutVoir">Passer ⏩</button>
+    <button class="btn" id="voirBilan" data-a="bilan" hidden>Voir le bilan</button>`;
+  let k = 0;
+  const ul = $("log");
+  const montrer = () => {
+    const l = R.log[k++];
+    const li = document.createElement("li"); li.className = l.type; li.textContent = l.txt; ul.appendChild(li);
+    majDirect(l);
+    if (k < R.log.length) minuteurLog = setTimeout(montrer, l.type === "phase" ? 650 : 1250);
+    else finLog();
+    li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
+  const finLog = () => { $("toutVoir").hidden = true; $("voirBilan").hidden = false; };
+  ecranBraquage.toutVoir = () => { clearTimeout(minuteurLog); while (k < R.log.length) { const l = R.log[k++]; const li = document.createElement("li"); li.className = l.type; li.textContent = l.txt; ul.appendChild(li); majDirect(l); } finLog(); $("voirBilan").scrollIntoView({ block: "end" }); };
+  if (S.logVu) ecranBraquage.toutVoir(); else minuteurLog = setTimeout(montrer, 400);
+}
+function majDirect(l) {
+  $("dTemps").textContent = `${l.t} min`;
+  const d = $("direct");
+  d.classList.toggle("alerte", l.police > 0);
+  $("dEtat").textContent = l.police === 2 ? "🚓 La police est sur place !" : l.police === 1 ? `🚨 Police en route (arrivée vers ${l.arrivee} min)` : l.alerte > 0.25 ? "😬 Ça commence à sentir mauvais…" : "Tout est calme.";
+}
+
+// --- bilan
+function ecranBilan() {
+  const c = cibleCourante(), R = S.resultat, etapes = etapesCourantes();
+  const recrues = {};
+  for (const e of etapes) if (e.type === "role") for (const o of e.offres) recrues[o.id] = o;
+  const statut = m => m.statut === "arrete" ? `<span class="badge rouge">🚔 Arrêté${recrues[m.id].sexe === "f" ? "e" : ""}</span>` : m.statut === "disparu" ? `<span class="badge rouge">💨 Parti${recrues[m.id].sexe === "f" ? "e" : ""} avec ${euros(m.vol)}</span>` : `<span class="badge vert">✅ Libre</span>`;
+  const membres = R.membres.map(m => {
+    const r = recrues[m.id], v = verdictPrix(r.facteur), caches = r.traits.filter(t => !r.connus.includes(t));
+    return `<div class="membre"><canvas width="96" height="96" data-avatar="${r.graine}" data-sexe="${r.sexe}" data-age="${r.age}"></canvas>
+      <div class="corps"><b>${nomComplet(r)}</b> <span class="muet">· ${ROLES[m.role].nom}</span><br>
+      ${statut(m)} ${m.blesse ? `<span class="badge rouge">🩸 Blessé${r.sexe === "f" ? "e" : ""}</span>` : ""}<br>
+      Vrai niveau : ${etoiles(vraiNiveau(r.s))} <span class="badge ${v.c}">${v.txt}</span>
+      ${r.traits.length ? `<br><span class="petit muet">Traits : ${r.traits.map(t => TRAITS[t].nom + (caches.includes(t) ? " (caché)" : "")).join(", ")}</span>` : ""}</div></div>`;
+  }).join("");
+  const objets = R.objets.map(o => `<div class="ligne-recap"><span>${BOUTIQUES[o.boutique].icone} ${o.nom}</span><span>${o.panne ? `<span class="badge rouge">En panne</span>` : `<span class="badge vert">A tenu</span>`} <span class="badge ${verdictPrix(o.facteur).c}">${verdictPrix(o.facteur).txt}</span></span></div>`).join("")
+    + R.infos.map(i => `<div class="ligne-recap"><span>🗂️ ${i.nom}</span><span>${i.vraie ? `<span class="badge vert">Vraie</span>` : `<span class="badge rouge">Fausse</span>`} <span class="badge ${verdictPrix(i.facteur).c}">${verdictPrix(i.facteur).txt}</span></span></div>`).join("");
+  const solde = R.gain - R.cout - R.saisie;
+  const fin = R.argentApres < seuilMinimum(S.niveau);
+  app.innerHTML = `
+    <section class="carte issue ${R.issue.c}">
+      <h2 class="titre">${R.issue.titre}</h2>
+      <p class="muet" style="margin:8px 0 0">${R.issue.txt}</p>
+    </section>
+    <div class="carte compte">
+      <div class="ligne-recap"><span>Butin dans les sacs</span><b>${euros(R.butinEmporte)}</b></div>
+      ${R.recel ? `<div class="ligne-recap"><span>Part du receleur</span><b>− ${euros(R.recel)}</b></div>` : ""}
+      <div class="ligne-recap"><span>Argent ramené</span><b>${euros(R.gain)}</b></div>
+      <div class="ligne-recap"><span>Préparation (équipe + matériel)</span><b>− ${euros(R.cout)}</b></div>
+      ${R.saisie ? `<div class="ligne-recap"><span>Saisie de la police</span><b>− ${euros(R.saisie)}</b></div>` : ""}
+      <div class="ligne-recap"><span>Bilan du coup</span><b style="color:${solde >= 0 ? "var(--vert)" : "var(--rouge)"}">${solde >= 0 ? "+" : "−"} ${euros(Math.abs(solde))}</b></div>
+      <div class="ligne-recap"><b>Ton argent</b><b style="color:var(--vert)">${euros(R.argentApres)}</b></div>
+    </div>
+    <h3 class="titre" style="font-size:1.25rem; color:var(--or); margin-top:18px">L'équipe, sans les masques</h3>
+    <div class="carte">${membres}</div>
+    ${objets ? `<h3 class="titre" style="font-size:1.25rem; color:var(--or); margin-top:18px">Le matériel</h3><div class="carte">${objets}</div>` : ""}
+    ${R.reussi && c.t >= S.niveauAvant ? `<p style="text-align:center; color:var(--or)">⭐ Ta réputation grandit : de plus grosses cibles s'ouvrent à toi.</p>` : ""}
+    ${fin ? `<div class="alerte-recap">Tu n'as plus assez d'argent pour monter une équipe.</div><button class="btn danger" data-a="finPartie">Fin de la partie</button>` : `<button class="btn" data-a="coupSuivant">Préparer le coup suivant</button>`}`;
+}
+const seuilMinimum = niveau => Math.round(BASE(Math.max(1, niveau - 1)) * 0.4);
+
+// --- fin de partie
+function ecranFin() {
+  const st = S.stats;
+  app.innerHTML = `
+    <section class="carte issue rouge" style="margin-top:20px"><h2 class="titre">Rideau</h2><p class="muet">Plus un sou pour monter une équipe. Ta carrière s'arrête ici.</p></section>
+    <div class="carte">
+      <div class="ligne-recap"><span>Coups tentés</span><b>${st.coups}</b></div>
+      <div class="ligne-recap"><span>Coups réussis</span><b>${st.reussis}</b></div>
+      <div class="ligne-recap"><span>Plus gros gain</span><b>${euros(st.meilleur)}</b></div>
+      <div class="ligne-recap"><span>Total ramené</span><b>${euros(st.totalGagne)}</b></div>
+      <div class="ligne-recap"><span>Niveau atteint</span><b>${etoiles(Math.min(st.niveauMax, NIVEAU_MAX), NIVEAU_MAX)}</b></div>
+    </div>
+    <button class="btn" data-a="nouvelle">Recommencer</button>`;
+}
+
+// --- actions
+app.addEventListener("click", ev => { const b = ev.target.closest("[data-a]"); if (b && !b.disabled) action(b.dataset.a, +b.dataset.i); });
+$("barre").addEventListener("click", ev => { const b = ev.target.closest("[data-a]"); if (b) action(b.dataset.a); });
+function action(a, i) {
+  const etapes = S && S.preps && S.cibleId ? etapesCourantes() : null;
+  switch (a) {
+    case "nouvelle":
+      if (charger() && S.ecran === "accueil" && charger().ecran !== "fin" && !confirm("Recommencer une partie ? La partie en cours sera perdue.")) return;
+      nouvellePartie(); aller("cibles"); break;
+    case "continuer": S = charger(); afficher(); break;
+    case "menu": clearTimeout(minuteurLog); S = { ecran: "accueil" }; afficher(); scrollTo(0, 0); break;
+    case "cible": {
+      const c = S.cibles[i]; S.cibleId = c.id;
+      if (!S.preps[c.id]) S.preps[c.id] = construireEtapes(c);
+      S.etape = Math.max(0, S.preps[c.id].findIndex(e => !etapeFaite(e)));
+      if (S.preps[c.id].every(etapeFaite)) S.etape = S.preps[c.id].length;
+      aller("prep"); break;
+    }
+    case "retourCibles": aller("cibles"); break;
+    case "etape": S.etape = i; sauver(); afficher(); scrollTo(0, 0); break;
+    case "choisir": { const e = etapes[S.etape]; e.choix = e.choix === i ? null : i; if (e.choix !== null) avancer(); else { sauver(); afficher(); } break; }
+    case "passer": etapes[S.etape].choix = -1; avancer(); break;
+    case "basculer": { const e = etapes[S.etape]; const k = e.multi.indexOf(i); if (k >= 0) e.multi.splice(k, 1); else e.multi.push(i); e.choix = null; sauver(); afficher(); break; }
+    case "suivant": { const e = etapes[S.etape]; e.choix = e.multi.length ? 0 : -1; avancer(); break; }
+    case "lancer": {
+      const c = cibleCourante();
+      if (depenses(etapes) > S.argent) return;
+      S.resultat = simuler(c, etapes, S.argent);
+      S.logVu = false; aller("braquage"); break;
+    }
+    case "toutVoir": ecranBraquage.toutVoir(); break;
+    case "bilan": {
+      if (!S.bilanApplique) appliquerBilan();
+      aller("bilan"); break;
+    }
+    case "coupSuivant": {
+      S.coup++; S.cibles = proposerCibles(S.niveau); S.preps = {}; S.cibleId = null; S.etape = 0; S.resultat = null; S.bilanApplique = false;
+      aller("cibles"); break;
+    }
+    case "finPartie": aller("fin"); break;
+  }
+}
+// passe à la prochaine étape pas encore faite (ou au récapitulatif)
+function avancer() {
+  const etapes = etapesCourantes();
+  let k = etapes.findIndex((e, j) => j > S.etape && !etapeFaite(e));
+  if (k < 0) k = etapes.findIndex(e => !etapeFaite(e));
+  S.etape = k < 0 ? etapes.length : k;
+  sauver(); afficher(); scrollTo(0, 0);
+}
+function appliquerBilan() {
+  const R = S.resultat, c = cibleCourante();
+  S.niveauAvant = S.niveau;
+  S.argent = R.argentApres;
+  S.stats.coups++; S.stats.totalGagne += R.gain;
+  if (R.reussi) {
+    S.stats.reussis++;
+    if (c.t >= S.niveau) { if (c.t === NIVEAU_MAX) S.legende = true; S.niveau = Math.min(NIVEAU_MAX, Math.max(S.niveau, c.t + 1)); }
+  }
+  S.stats.meilleur = Math.max(S.stats.meilleur, R.gain);
+  S.stats.niveauMax = Math.max(S.stats.niveauMax, S.niveau);
+  S.bilanApplique = true; S.logVu = true;
+  sauver();
+}
+
+/* ===== PORTRAITS (dessinés au hasard, à partir d'une graine) ===== */
+function dessinerAvatars() { document.querySelectorAll("canvas[data-avatar]").forEach(cv => dessinerAvatar(cv, +cv.dataset.avatar, cv.dataset.sexe, +cv.dataset.age)); }
+function dessinerAvatar(cv, graine, sexe, age) {
+  const R = mulberry32(graine), x = cv.getContext("2d"), k = cv.width / 100;
+  const pick = a => a[Math.floor(R() * a.length)];
+  x.setTransform(k, 0, 0, k, 0, 0); x.clearRect(0, 0, 100, 100);
+  const fond = pick(["#2b2733", "#33291d", "#1f2b2a", "#2d2222", "#232838"]);
+  const peau = pick(["#f1c27d", "#e0ac69", "#c68642", "#8d5524", "#ffdbac", "#5c3a21", "#d9a066"]);
+  const cheveux = age > 55 && R() < 0.6 ? pick(["#b5b5b5", "#dcdcdc", "#8a8a8a"]) : pick(["#1b1b1b", "#3b2a1a", "#6b4423", "#b8860b", "#2a1a10", "#8b3a1a"]);
+  const habit = pick(["#3a3f4b", "#5a2a2a", "#2a4a3a", "#1d1d1d", "#4a4030", "#2c3e66", "#6b5b3a"]);
+  const cagoule = R() < 0.06;
+  const ell = (cx, cy, rx, ry, c) => { x.fillStyle = c; x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); x.fill(); };
+  x.fillStyle = fond; x.fillRect(0, 0, 100, 100);
+  const longs = sexe === "f" && R() < 0.65;
+  if (longs && !cagoule) { x.fillStyle = cheveux; x.beginPath(); if (x.roundRect) x.roundRect(26, 30, 48, 52, 14); else x.rect(26, 30, 48, 52); x.fill(); }
+  ell(50, 104, 40, 30, habit);                       // épaules
+  x.fillStyle = peau; x.fillRect(43, 64, 14, 14);    // cou
+  ell(50, 48, 21, 26, cagoule ? "#141414" : peau);   // tête
+  if (cagoule) { ell(50, 47, 15, 6, peau); }
+  // yeux et sourcils
+  const yeux = cagoule ? "#111" : "#1d1d1d";
+  ell(42, 47, 2.6, 2.8, yeux); ell(58, 47, 2.6, 2.8, yeux);
+  if (!cagoule) {
+    x.strokeStyle = cheveux; x.lineWidth = 2.2; x.lineCap = "round";
+    const sb = R() * 3 - 1.5;
+    x.beginPath(); x.moveTo(37, 41 + sb); x.lineTo(46, 40); x.moveTo(54, 40); x.lineTo(63, 41 - sb); x.stroke();
+    // nez et bouche
+    x.strokeStyle = "rgba(0,0,0,.25)"; x.lineWidth = 1.6; x.beginPath(); x.moveTo(50, 50); x.lineTo(48, 57); x.lineTo(51, 58); x.stroke();
+    x.strokeStyle = "#5a2e2e"; x.lineWidth = 2; x.beginPath();
+    const sourire = R() * 4 - 1.5; x.moveTo(43, 64); x.quadraticCurveTo(50, 64 + sourire, 57, 64); x.stroke();
+    // barbe / moustache
+    if (sexe === "m" && R() < 0.4) { x.fillStyle = cheveux; x.globalAlpha = .9; x.beginPath(); x.moveTo(30, 52); x.quadraticCurveTo(32, 76, 50, 76); x.quadraticCurveTo(68, 76, 70, 52); x.quadraticCurveTo(66, 66, 50, 67); x.quadraticCurveTo(34, 66, 30, 52); x.fill(); x.globalAlpha = 1; }
+    else if (sexe === "m" && R() < 0.25) { x.fillStyle = cheveux; x.beginPath(); x.ellipse(50, 60.5, 7, 2.2, 0, 0, Math.PI * 2); x.fill(); }
+    // cheveux
+    const style = R();
+    x.fillStyle = cheveux;
+    if (sexe === "m" && age > 40 && style < 0.25) { /* chauve */ }
+    else { x.beginPath(); x.ellipse(50, 33, 22, 13, 0, Math.PI, 0); x.fill(); x.fillRect(28, 32, 4, 12); x.fillRect(68, 32, 4, 12);
+      if (sexe === "f" && !longs && style < 0.5) ell(50, 20, 8, 7, cheveux); }
+    // lunettes
+    if (R() < 0.25) { x.strokeStyle = "#ddd"; x.lineWidth = 1.6; x.beginPath(); x.arc(42, 47, 6, 0, Math.PI * 2); x.moveTo(64, 47); x.arc(58, 47, 6, 0, Math.PI * 2); x.moveTo(48, 47); x.lineTo(52, 47); x.stroke(); }
+    // casquette
+    if (R() < 0.15) { x.fillStyle = pick(["#c0392b", "#1e3a5f", "#222", "#556b2f"]); x.beginPath(); x.ellipse(50, 30, 23, 12, 0, Math.PI, 0); x.fill(); x.fillRect(48, 28, 30, 4); }
+  }
+}
+
+/* ===== VERSION =====
+   À chaque changement : on monte VERSION ici et dans version.json (même numéro).
+   La page compare régulièrement avec version.json en ligne et propose de se mettre à jour. */
+const VERSION = "1.0.0", NOTES = "Première version : choix de la cible, recrutement, matériel, informateurs, braquage en direct et bilan.";
+$("version").innerHTML = `<b>v${VERSION}</b> · ${NOTES}`;
+const plusRecente = (a, b) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
+async function verifierVersion() {
+  try {
+    const r = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return;
+    const v = await r.json();
+    if (!v.version || !plusRecente(v.version, VERSION)) return;
+    const resume = v.notes ? v.notes.split(/(?<=[.!])\s|\n/)[0].slice(0, 110) : "";
+    $("majTexte").textContent = `Nouvelle version disponible (${v.version})${resume ? " : " + resume : ""}`;
+    $("majDispo").hidden = false; $("majDispo").dataset.version = v.version;
+  } catch (e) {}
+}
+$("majOk").addEventListener("click", () => { location.href = location.pathname + "?v=" + $("majDispo").dataset.version; });
+verifierVersion();
+setInterval(verifierVersion, 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) verifierVersion(); });
+
+afficher();
+</script>
+</body>
+</html>
